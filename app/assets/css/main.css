@@ -47,28 +47,28 @@
   --shadow-lift: 0 1px 2px rgb(0 0 0 / .06);
 }
 
-/* Black, grey and white on parchment, with one restrained accent (navy) */
+/* Black, grey and white, with one restrained accent (navy) */
 :root {
-  --canvas: #f5f2ea;
-  --paper: #fdfcf8;
+  --canvas: #ffffff;
+  --paper: #ffffff;
   --ink: #1b1b1b;
-  --muted: #6a6a66;
-  --faint: #b7b4ac;
-  --line: #e1ddd3;
+  --muted: #666666;
+  --faint: #bdbdbd;
+  --line: #e6e6e6;
   --accent: #1f3a5c;
   --accent-deep: #152a43;
-  --accent-soft: #e7ebf0;
-  --highlight: #f1e4a6;
+  --accent-soft: #eef2f7;
+  --highlight: #fbeba5;
   --brass: #1b1b1b;
-  --on-brass: #fdfcf8;
+  --on-brass: #ffffff;
   --danger: #9b2c2c;
-  --danger-soft: #f6e4e1;
+  --danger-soft: #fbecea;
   --term: #1b1b1b;
-  --term-soft: #ecebe6;
+  --term-soft: #f2f2f2;
   --abbr: #1f3a5c;
-  --abbr-soft: #e7ebf0;
+  --abbr-soft: #eef2f7;
   --pro: #1b1b1b;
-  --pro-soft: #ecebe6;
+  --pro-soft: #f2f2f2;
 }
 
 @media (prefers-color-scheme: dark) {

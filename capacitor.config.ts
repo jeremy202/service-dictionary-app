@@ -5,19 +5,19 @@ const config: CapacitorConfig = {
   appName: 'Service Dictionary',
   // Output of `npm run generate`
   webDir: '.output/public',
-  backgroundColor: '#f5f2ea',
+  backgroundColor: '#ffffff',
   android: {
-    backgroundColor: '#f5f2ea',
+    backgroundColor: '#ffffff',
   },
   ios: {
-    backgroundColor: '#f5f2ea',
+    backgroundColor: '#ffffff',
     contentInset: 'never',
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 800,
       launchAutoHide: true,
-      backgroundColor: '#f5f2ea',
+      backgroundColor: '#ffffff',
       showSpinner: false,
     },
   },

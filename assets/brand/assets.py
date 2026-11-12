@@ -18,6 +18,6 @@ def splash(bg, ink, sub, badge, out):
     <div style="font-family:I;font-weight:500;font-size:34px;letter-spacing:2px;color:{sub};margin-top:22px">Terms · Abbreviations · Prowords</div>
     </body>'''
     render(html,out,2732,2732)
-splash('#f5f2ea','#1b1b1b','#6a6a66',None,'splash.png')
+splash('#ffffff','#1b1b1b','#666666',None,'splash.png')
 splash('#161616','#ebebe8','#9a9a95',None,'splash-dark.png')
 print('ok')
