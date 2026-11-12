@@ -75,3 +75,20 @@ export function best(list) {
   const end = e => (e.expiresAt === null ? Infinity : new Date(e.expiresAt).getTime())
   return list.filter(Boolean).sort((a, b) => end(b) - end(a))[0] || null
 }
+
+/** The active plan paid for with this email, or null. Asks Paystack, so it can't be faked. */
+export async function activeEntitlementFor(email) {
+  let customer
+  try {
+    customer = await paystack(`/customer/${encodeURIComponent(email)}`)
+  } catch (e) {
+    if (e.status === 404 || e.status === 400) return null // never paid
+    throw e
+  }
+  const txs = await paystack(`/transaction?customer=${customer.id}&status=success&perPage=100`)
+  const now = Date.now()
+  const active = (txs || [])
+    .map(tx => entitlementFrom({ ...tx, customer: tx.customer || { email } }))
+    .filter(e => e && (e.expiresAt === null || new Date(e.expiresAt).getTime() > now))
+  return best(active)
+}

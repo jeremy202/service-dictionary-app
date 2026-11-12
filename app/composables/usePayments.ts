@@ -17,7 +17,17 @@ import type { Entitlement } from './useAccess'
 const K_PENDING = 'sd-pending-payment'
 const busy = ref(false)
 const message = ref('')
+/** Reference of a payment started but not yet confirmed; paying is locked while set. */
+const pending = ref<string | null>(null)
 let listening = false
+let loaded = false
+
+const setPending = (ref: string | null) => {
+  pending.value = ref
+  try { ref ? localStorage.setItem(K_PENDING, ref) : localStorage.removeItem(K_PENDING) } catch {}
+}
+// Paystack statuses that mean the payment did not go through, so the person may try again
+const FINISHED_UNPAID = new Set(['abandoned', 'failed', 'reversed', 'invalid'])
 
 type Result = { ok: true; entitlement: Entitlement } | { ok: false; error: string }
 
@@ -25,6 +35,10 @@ export function usePayments() {
   const api = (useRuntimeConfig().public.paymentsApi as string || '').replace(/\/$/, '')
   const configured = !!api
   const access = useAccess()
+  if (!loaded && import.meta.client) {
+    loaded = true
+    try { pending.value = localStorage.getItem(K_PENDING) } catch {}
+  }
 
   async function call(path: string, init?: RequestInit): Promise<any> {
     const res = await fetch(`${api}${path}`, { ...init, headers: { 'Content-Type': 'application/json' } })
@@ -38,9 +52,11 @@ export function usePayments() {
       const r = await call(`/api/verify?reference=${encodeURIComponent(reference)}`)
       if (r.status === 'success' && r.entitlement) {
         access.setEntitlement(r.entitlement)
-        try { localStorage.removeItem(K_PENDING) } catch {}
+        if (pending.value === reference) setPending(null)
         return { ok: true, entitlement: r.entitlement }
       }
+      // Not paid (closed checkout, failed card…): unlock paying again
+      if (FINISHED_UNPAID.has(r.status) && pending.value === reference) setPending(null)
       return { ok: false, error: r.message || 'Payment not completed.' }
     } catch (e: any) {
       return { ok: false, error: e.message }
@@ -49,8 +65,7 @@ export function usePayments() {
 
   /** Checks a payment that was started earlier (e.g. the app was closed during checkout). */
   async function checkPending(): Promise<Result | null> {
-    let ref: string | null = null
-    try { ref = localStorage.getItem(K_PENDING) } catch {}
+    const ref = pending.value
     if (!ref || !configured) return null
     busy.value = true
     const r = await verify(ref)
@@ -77,11 +92,14 @@ export function usePayments() {
 
   async function pay(plan: PlanId, email: string): Promise<{ error?: string }> {
     if (!configured) return { error: 'Payments are not switched on yet.' }
+    // Never start a second payment while one is being confirmed or a plan is active
+    if (pending.value) return { error: 'A payment is still being confirmed. Check its status first.' }
+    if (access.hasPlan.value) return { error: 'You already have an active plan.' }
     busy.value = true
     message.value = ''
     try {
       const r = await call('/api/pay', { method: 'POST', body: JSON.stringify({ plan, email }) })
-      try { localStorage.setItem(K_PENDING, r.reference) } catch {}
+      setPending(r.reference)
       if (Capacitor.isNativePlatform()) await Browser.open({ url: r.url, presentationStyle: 'popover', toolbarColor: '#16332a' })
       else window.open(r.url, '_blank')
       return {}
@@ -109,5 +127,5 @@ export function usePayments() {
     }
   }
 
-  return { configured, busy, message, pay, verify, restore, checkPending, listen }
+  return { configured, busy, message, pending, pay, verify, restore, checkPending, listen }
 }

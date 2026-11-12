@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
+import { ALPHABET, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
 const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
 const library = useLibrary()
@@ -9,7 +9,7 @@ const access = useAccess()
 const payments = usePayments()
 
 /* ---------- Premium / payment page ---------- */
-const paywall = ref<null | 'limit' | 'menu'>(null)
+const paywall = ref<null | 'launch' | 'limit' | 'menu'>(null)
 const premiumPill = computed(() => {
   if (access.hasPlan.value) return { text: 'Premium', cls: 'bg-brass/15 text-brass ring-1 ring-brass/30' }
   if (access.inTrial.value) return { text: `${access.trialDaysLeft.value}d trial`, cls: 'bg-accent-soft text-accent' }
@@ -190,7 +190,11 @@ onMounted(() => {
 onMounted(async () => {
   payments.listen(onPaymentResult)
   const r = await payments.checkPending() // a payment finished while the app was closed
-  if (r?.ok) onPaymentResult(r)
+  if (r?.ok) { onPaymentResult(r); return }
+  // Trial users see the plans each time they open the app (after the trial date is confirmed)
+  await Promise.race([access.syncTrial(), new Promise(res => setTimeout(res, 2500))])
+  await new Promise(res => setTimeout(res, 600)) // let the splash screen finish
+  if (access.inTrial.value && !access.hasPlan.value && !paywall.value && !stack.value.length) paywall.value = 'launch'
 })
 onBeforeUnmount(() => observer?.disconnect())
 </script>
@@ -257,11 +261,11 @@ onBeforeUnmount(() => observer?.disconnect())
           <div v-if="view === 'browse'" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
             <button
               v-for="f in FILTERS" :key="f.id" type="button"
-              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-[13.5px] font-medium whitespace-nowrap transition-colors"
+              class="flex h-8 flex-none cursor-pointer items-center rounded-full border px-4 text-[13.5px] font-medium whitespace-nowrap transition-colors"
               :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
               @click="setFilter(f.id)"
             >
-              {{ f.short }}<span class="text-[11.5px] tabular-nums" :class="tab === f.id ? 'opacity-80' : 'text-muted'">{{ fmt(query.trim() ? matchCounts[f.id] : COUNTS[f.id]) }}</span>
+              {{ f.short }}
             </button>
             <button
               v-if="tab === 'a'" type="button"
@@ -385,11 +389,7 @@ onBeforeUnmount(() => observer?.disconnect())
     </Transition>
 
     <!-- ===== Payment page ===== -->
-    <Transition
-      enter-from-class="translate-y-full" leave-to-class="translate-y-full"
-      enter-active-class="transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
-      leave-active-class="transition-transform duration-250 ease-in"
-    >
+    <Transition leave-to-class="opacity-0 translate-y-6" leave-active-class="transition duration-200 ease-in">
       <Paywall v-if="paywall" :reason="paywall" @close="paywall = null" @notify="notify" />
     </Transition>
 

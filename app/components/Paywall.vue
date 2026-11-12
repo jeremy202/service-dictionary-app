@@ -2,8 +2,16 @@
 import { COUNTS } from '~/utils/dictionary'
 import { FREE_DAILY_ENTRIES, naira, PLANS, TRIAL_DAYS, type PlanId } from '~/utils/plans'
 
-/** limit = today's free entries used up; otherwise opened from the Premium button */
-const props = defineProps<{ reason: 'limit' | 'menu' }>()
+/**
+ * Plans pop-up (slides up over the app).
+ *  launch = shown when a trial user opens the app
+ *  limit  = today's free entries are used up
+ *  menu   = opened from the Premium button
+ *
+ * Paying is blocked while a plan is active (until it ends) and while a payment is still
+ * being confirmed, so nobody pays twice.
+ */
+const props = defineProps<{ reason: 'launch' | 'limit' | 'menu' }>()
 const emit = defineEmits<{ close: []; notify: [message: string] }>()
 
 const access = useAccess()
@@ -18,25 +26,40 @@ const mode = ref<'buy' | 'restore'>('buy')
 try { email.value = localStorage.getItem('sd-email') || '' } catch {}
 const validEmail = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim()))
 const fmt = (n: number) => n.toLocaleString('en-US')
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+const dateFmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+
+const premium = computed(() => access.hasPlan.value)
+const pending = computed(() => !!payments.pending.value)
+const showPlans = computed(() => mode.value === 'buy' && !premium.value)
 
 const headline = computed(() => {
-  if (access.hasPlan.value) return 'You\'re on Premium'
-  if (props.reason === 'limit') return 'You\'ve used today\'s free entries'
+  if (mode.value === 'restore') return 'Restore your purchase'
+  if (premium.value) return 'You\'re on Premium'
+  if (pending.value) return 'Confirming your payment'
+  if (props.reason === 'limit') return 'Daily limit reached'
+  if (access.inTrial.value) return props.reason === 'launch' ? 'Enjoy your free trial' : 'Go Premium'
   return 'Go Premium'
 })
 const subline = computed(() => {
-  if (access.hasPlan.value) {
+  if (mode.value === 'restore') return 'Enter the email you paid with. Premium comes back on this phone.'
+  if (premium.value) {
     const e = access.entitlement.value!
     return e.expiresAt === null
       ? 'Lifetime access. Thank you for your support!'
-      : `${PLANS.find(p => p.id === e.plan)?.name} plan · ${access.planDaysLeft.value} day${access.planDaysLeft.value === 1 ? '' : 's'} left`
+      : `Your ${PLANS.find(p => p.id === e.plan)?.name.toLowerCase()} plan is active until ${dateFmt(e.expiresAt)}. You can renew once it ends.`
   }
-  if (access.inTrial.value) return `Free trial · ${access.trialDaysLeft.value} day${access.trialDaysLeft.value === 1 ? '' : 's'} left. Choose a plan to keep unlimited access afterwards.`
-  if (props.reason === 'limit') return `Free use is ${FREE_DAILY_ENTRIES} entries a day. Upgrade for unlimited access, or come back tomorrow.`
+  if (pending.value) return 'We\'re waiting for Paystack to confirm your payment. Paying is paused until it\'s confirmed, so you\'re never charged twice.'
+  if (props.reason === 'limit') return `You've used today's ${FREE_DAILY_ENTRIES} free entries. Choose a plan for unlimited access, or come back tomorrow.`
+  if (access.inTrial.value) return `${plural(access.trialDaysLeft.value, 'day')} left. Choose a plan now to keep unlimited access when your trial ends.`
   return `Your ${TRIAL_DAYS}-day free trial has ended. You get ${FREE_DAILY_ENTRIES} free entries a day (${access.freeLeftToday.value} left today).`
 })
+const laterLabel = computed(() => {
+  if (props.reason === 'limit') return 'Come back tomorrow'
+  if (props.reason === 'launch') return 'Continue with free trial'
+  return 'Not now'
+})
 
-const dateFmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 const planRows = computed<[string, string][]>(() => {
   const e = access.entitlement.value
   if (!e) return []
@@ -50,18 +73,26 @@ const planRows = computed<[string, string][]>(() => {
 })
 
 const BENEFITS = [
-  'Unlimited entries, every day',
-  `Full meanings for ${fmt(COUNTS.t)} terms, ${fmt(COUNTS.a)} abbreviations and ${fmt(COUNTS.p)} prowords`,
-  'Save, share and copy any entry',
-  'Works offline, wherever you are',
+  'Unlimited entries every day',
+  `${fmt(COUNTS.t)} terms, ${fmt(COUNTS.a)} abbreviations, ${fmt(COUNTS.p)} prowords`,
+  'Save, share and copy',
+  'Works offline',
 ]
 
 async function continueToPay() {
+  if (pending.value || premium.value || payments.busy.value) return
   error.value = ''
   if (!validEmail.value) { error.value = 'Enter your email address: Paystack sends your receipt there.'; return }
   try { localStorage.setItem('sd-email', email.value.trim()) } catch {}
   const r = await payments.pay(selected.value, email.value.trim())
   if (r.error) error.value = r.error
+}
+
+async function checkStatus() {
+  error.value = ''
+  const r = await payments.checkPending()
+  if (r?.ok) { emit('notify', 'Payment successful. Premium unlocked'); emit('close') }
+  else if (r && !r.ok && payments.pending.value) error.value = r.error
 }
 
 async function restore() {
@@ -74,120 +105,154 @@ async function restore() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-40 flex flex-col bg-canvas">
-    <!-- Top bar -->
-    <header class="flex-none pt-[env(safe-area-inset-top)]">
-      <div class="flex h-13 items-center justify-between px-2">
-        <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl text-ink/70 active:bg-line/50" aria-label="Close" @click="emit('close')">
-          <AppIcon name="x" :size="22" />
+  <div class="fixed inset-0 z-40 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" :aria-label="headline">
+    <!-- Backdrop -->
+    <div class="sheet-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="emit('close')" />
+
+    <!-- Sheet -->
+    <div class="sheet relative flex max-h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-canvas shadow-2xl sm:rounded-[28px]">
+      <!-- Handle + close -->
+      <div class="relative flex-none pt-2.5">
+        <div class="mx-auto h-1.5 w-10 rounded-full bg-line" />
+        <button type="button" class="absolute top-2 right-2 grid size-10 cursor-pointer place-items-center rounded-full text-muted active:bg-line/50" aria-label="Close" @click="emit('close')">
+          <AppIcon name="x" :size="20" />
         </button>
-        <button
-          v-if="!access.hasPlan.value"
-          type="button" class="cursor-pointer rounded-xl px-3 py-2 text-[15px] font-medium text-accent active:bg-line/50"
-          @click="mode = mode === 'buy' ? 'restore' : 'buy'; error = ''"
-        >{{ mode === 'buy' ? 'Restore purchase' : 'See plans' }}</button>
       </div>
-    </header>
 
-    <div class="flex-1 overflow-y-auto overscroll-contain">
-      <div class="mx-auto max-w-md px-5 pb-6">
-        <!-- Hero -->
-        <div class="flex flex-col items-center pt-1 text-center">
-          <img src="/logo.svg" alt="" width="68" height="68" class="size-17 drop-shadow-[0_10px_22px_rgba(22,51,42,.3)]">
-          <span class="mt-4 rounded-full bg-brass/15 px-3 py-0.5 text-[11px] font-bold tracking-[.14em] text-brass uppercase">Premium</span>
-          <h1 class="mt-2 mb-0 font-serif text-[27px] leading-tight font-semibold tracking-tight">{{ headline }}</h1>
-          <p class="mt-2 mb-0 max-w-sm text-[14.5px] leading-relaxed text-muted">{{ subline }}</p>
-        </div>
-
-        <!-- Current plan -->
-        <div v-if="access.hasPlan.value && access.entitlement.value" class="mt-6 overflow-hidden rounded-2xl border border-line bg-paper shadow-card">
-          <div v-for="row in planRows" :key="row[0]" class="flex items-baseline justify-between gap-4 border-b border-line/70 px-4 py-3 text-[14.5px] last:border-b-0">
-            <span class="text-muted">{{ row[0] }}</span>
-            <span class="min-w-0 truncate text-right font-medium" :class="row[0] === 'Reference' ? 'font-mono text-[12.5px]' : ''">{{ row[1] }}</span>
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+        <!-- Header -->
+        <div class="flex items-center gap-3.5 pt-3 pr-8">
+          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none drop-shadow-[0_8px_16px_rgba(22,51,42,.28)]">
+          <div class="min-w-0">
+            <span class="text-[10.5px] font-bold tracking-[.16em] text-brass uppercase">Service Dictionary Premium</span>
+            <h2 class="m-0 font-serif text-[23px] leading-tight font-semibold tracking-tight">{{ headline }}</h2>
           </div>
         </div>
-        <button
-          v-if="access.hasPlan.value && !access.entitlement.value?.expiresAt"
-          type="button"
-          class="mt-6 h-12 w-full cursor-pointer rounded-2xl bg-accent text-[16px] font-semibold text-paper active:scale-[.99]"
-          @click="emit('close')"
-        >Done</button>
-        <p v-if="access.hasPlan.value && access.entitlement.value?.expiresAt" class="mt-6 mb-0 text-center text-[13px] text-muted">
-          Want to extend or go Lifetime? Choose a plan below.
-        </p>
+        <p class="mt-2.5 mb-0 text-[14px] leading-relaxed text-muted">{{ subline }}</p>
+
+        <!-- Trial progress -->
+        <div v-if="access.inTrial.value && !premium && !pending && mode === 'buy'" class="mt-3">
+          <div class="h-1.5 overflow-hidden rounded-full bg-line">
+            <div class="h-full rounded-full bg-accent" :style="{ width: `${Math.max(4, Math.round(((TRIAL_DAYS - access.trialDaysLeft.value) / TRIAL_DAYS) * 100))}%` }" />
+          </div>
+          <div class="mt-1 flex justify-between text-[11.5px] text-muted">
+            <span>Free trial</span><span>{{ plural(access.trialDaysLeft.value, 'day') }} left</span>
+          </div>
+        </div>
+
+        <!-- Current plan details (paying is blocked until the plan ends) -->
+        <div v-if="premium && planRows.length && mode === 'buy'" class="mt-4 overflow-hidden rounded-2xl border border-line bg-paper">
+          <div v-for="row in planRows" :key="row[0]" class="flex items-baseline justify-between gap-4 border-b border-line/70 px-4 py-2.5 text-[14px] last:border-b-0">
+            <span class="text-muted">{{ row[0] }}</span>
+            <span class="min-w-0 truncate text-right font-medium" :class="row[0] === 'Reference' ? 'font-mono text-[12px]' : ''">{{ row[1] }}</span>
+          </div>
+        </div>
 
         <!-- Benefits -->
-        <ul v-if="!access.hasPlan.value || access.entitlement.value?.expiresAt" class="mx-auto mt-6 mb-0 max-w-sm list-none space-y-2.5 p-0">
-          <li v-for="b in BENEFITS" :key="b" class="flex gap-3 text-[14.5px] leading-snug">
-            <span class="mt-px grid size-5 flex-none place-items-center rounded-full bg-accent text-paper"><AppIcon name="check" :size="13" /></span>
+        <ul v-if="showPlans" class="mt-4 mb-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0">
+          <li v-for="b in BENEFITS" :key="b" class="flex gap-2 text-[13px] leading-snug">
+            <span class="mt-px grid size-4.5 flex-none place-items-center rounded-full bg-accent text-paper"><AppIcon name="check" :size="11" /></span>
             <span>{{ b }}</span>
           </li>
         </ul>
 
         <!-- Plans -->
-        <template v-if="mode === 'buy' && (!access.hasPlan.value || access.entitlement.value?.expiresAt)">
-          <div class="mt-7 space-y-3" role="radiogroup" aria-label="Plans">
-            <button
-              v-for="p in PLANS" :key="p.id" type="button" role="radio" :aria-checked="selected === p.id"
-              class="relative flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border-2 bg-paper px-4 py-3.5 text-left transition"
-              :class="selected === p.id ? 'border-accent shadow-lift' : 'border-line shadow-card'"
-              @click="selected = p.id"
-            >
-              <span
-                class="grid size-5.5 flex-none place-items-center rounded-full border-2 transition"
-                :class="selected === p.id ? 'border-accent bg-accent text-paper' : 'border-faint'"
-              ><AppIcon v-if="selected === p.id" name="check" :size="12" /></span>
-              <span class="min-w-0 flex-1">
-                <span class="block text-[16px] font-semibold">{{ p.name }}</span>
-                <span class="block text-[13px] text-muted">{{ p.note }}</span>
-              </span>
-              <span class="text-right">
-                <span class="block font-serif text-[22px] leading-none font-semibold">{{ naira(p.price) }}</span>
-                <span class="mt-1 block text-[12px] text-muted">{{ p.period }}</span>
-              </span>
-              <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-full bg-brass px-2.5 py-0.5 text-[10.5px] font-bold tracking-wider text-[#1b211e] uppercase">{{ p.badge }}</span>
-            </button>
-          </div>
-        </template>
+        <div v-if="showPlans" class="mt-5 space-y-2.5" :class="pending ? 'pointer-events-none opacity-50' : ''" role="radiogroup" aria-label="Plans">
+          <button
+            v-for="p in PLANS" :key="p.id" type="button" role="radio" :aria-checked="selected === p.id" :disabled="pending"
+            class="relative flex w-full cursor-pointer items-center gap-3 rounded-2xl border-2 bg-paper px-4 py-3 text-left transition"
+            :class="selected === p.id ? 'border-accent shadow-lift' : 'border-line'"
+            @click="selected = p.id"
+          >
+            <span
+              class="grid size-5.5 flex-none place-items-center rounded-full border-2 transition"
+              :class="selected === p.id ? 'border-accent bg-accent text-paper' : 'border-faint'"
+            ><AppIcon v-if="selected === p.id" name="check" :size="12" /></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15.5px] font-semibold">{{ p.name }}</span>
+              <span class="block text-[12.5px] text-muted">{{ p.note }}</span>
+            </span>
+            <span class="text-right">
+              <span class="block font-serif text-[21px] leading-none font-semibold">{{ naira(p.price) }}</span>
+              <span class="mt-1 block text-[11.5px] text-muted">{{ p.period }}</span>
+            </span>
+            <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-full bg-brass px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#1b211e] uppercase">{{ p.badge }}</span>
+          </button>
+        </div>
 
-        <!-- Email (receipt / restore) -->
-        <div v-if="!access.hasPlan.value || (mode === 'buy' && access.entitlement.value?.expiresAt)" class="mt-6">
-          <label class="mb-1.5 block text-[13px] font-semibold text-ink/80" for="pay-email">
+        <!-- Email -->
+        <div v-if="(showPlans && !pending) || mode === 'restore'" class="mt-4">
+          <label class="mb-1.5 block text-[12.5px] font-semibold text-ink/80" for="pay-email">
             {{ mode === 'buy' ? 'Email for your receipt' : 'Email you paid with' }}
           </label>
           <input
             id="pay-email" v-model="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false"
             placeholder="you@example.com"
             class="h-12 w-full rounded-xl border border-line bg-paper px-4 text-[16px] outline-none focus:border-accent/60 focus:ring-3 focus:ring-accent-soft"
+            @keydown.enter="mode === 'buy' ? continueToPay() : restore()"
           >
         </div>
 
         <p v-if="error" class="mt-3 mb-0 rounded-xl bg-[#fbe9e7] px-3.5 py-2.5 text-[13.5px] text-[#9a3412] dark:bg-[#3a1f19] dark:text-[#f5b39a]">{{ error }}</p>
-        <p v-if="!payments.configured" class="mt-3 mb-0 rounded-xl bg-accent-soft px-3.5 py-2.5 text-[13px] text-accent">
-          Test build: payments will work once the Paystack payment service is connected.
+      </div>
+
+      <!-- Actions -->
+      <div class="flex-none border-t border-line/70 bg-canvas px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <!-- Restore -->
+        <button
+          v-if="mode === 'restore'"
+          type="button" :disabled="payments.busy.value"
+          class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
+          @click="restore"
+        >
+          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+          Restore purchase
+        </button>
+        <!-- Already paid: no payment button until the plan ends -->
+        <button
+          v-else-if="premium"
+          type="button" class="h-13 w-full cursor-pointer rounded-2xl bg-accent text-[16px] font-semibold text-paper active:scale-[.99]"
+          @click="emit('close')"
+        >Done</button>
+        <!-- Payment waiting for confirmation: paying is locked -->
+        <button
+          v-else-if="pending"
+          type="button" :disabled="payments.busy.value"
+          class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-accent bg-paper text-[16px] font-semibold text-accent transition active:scale-[.99] disabled:opacity-60"
+          @click="checkStatus"
+        >
+          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          Check payment status
+        </button>
+        <button
+          v-else
+          type="button" :disabled="payments.busy.value"
+          class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
+          @click="continueToPay"
+        >
+          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+          Continue · {{ naira(plan.price) }}
+        </button>
+
+        <div v-if="!premium" class="mt-1.5 flex items-center justify-between">
+          <button
+            type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-accent"
+            @click="mode = mode === 'buy' ? 'restore' : 'buy'; error = ''"
+          >{{ mode === 'buy' ? 'Restore purchase' : 'See plans' }}</button>
+          <button type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-muted" @click="emit('close')">{{ laterLabel }}</button>
+        </div>
+        <p class="m-0 mt-1 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-muted">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+          Secure payment by Paystack · No automatic renewals
         </p>
       </div>
     </div>
-
-    <!-- Action -->
-    <footer v-if="!access.hasPlan.value || (mode === 'buy' && access.entitlement.value?.expiresAt)" class="flex-none border-t border-line/70 bg-canvas px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-      <div class="mx-auto max-w-md">
-        <button
-          type="button"
-          :disabled="payments.busy.value"
-          class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16.5px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
-          @click="mode === 'buy' ? continueToPay() : restore()"
-        >
-          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
-          <template v-if="mode === 'buy'">Continue · {{ naira(plan.price) }}</template>
-          <template v-else>Restore purchase</template>
-        </button>
-        <p class="mt-2.5 mb-0 flex items-center justify-center gap-1.5 text-center text-[12px] text-muted">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-          Secure payment by Paystack · Card, bank transfer or USSD
-        </p>
-        <p v-if="mode === 'buy'" class="mt-1 mb-0 text-center text-[11.5px] text-muted">Plans don't renew automatically. No hidden charges.</p>
-      </div>
-    </footer>
   </div>
 </template>
+
+<style scoped>
+.sheet { animation: sheet-up .32s cubic-bezier(.2, .8, .2, 1); }
+.sheet-backdrop { animation: fade-in .25s ease-out; }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes fade-in { from { opacity: 0; } }
+</style>

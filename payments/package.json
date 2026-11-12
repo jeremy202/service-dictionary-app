@@ -3,5 +3,10 @@
   "private": true,
   "type": "module",
   "description": "Paystack payment service for the Service Dictionary app (Netlify Functions)",
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
+  }
 }

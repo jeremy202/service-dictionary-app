@@ -24,7 +24,8 @@ export default async (req) => {
     return json({ status, message: messages[status] || 'The payment could not be confirmed. Please contact support with your receipt.' })
   } catch (e) {
     console.error('verify', e)
-    return json({ error: e.status === 400 || e.status === 404 ? 'Payment not found.' : 'Could not check the payment. Please try again.' }, e.status === 404 ? 404 : 502)
+    const notFound = e.status === 400 || e.status === 404
+    return json({ error: notFound ? 'Payment not found.' : 'Could not check the payment. Please try again.' }, notFound ? 404 : 502)
   }
 }
 
