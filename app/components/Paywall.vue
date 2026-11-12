@@ -122,7 +122,7 @@ async function restore() {
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
         <!-- Header -->
         <div class="flex items-center gap-3.5 pt-3 pr-8">
-          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none dark:invert">
+          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none">
           <div class="min-w-0">
             <span class="text-[11.5px] font-semibold tracking-[.06em] text-muted uppercase">Premium</span>
             <h2 class="m-0 font-serif text-[24px] leading-tight font-semibold">{{ headline }}</h2>

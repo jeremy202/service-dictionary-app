@@ -205,7 +205,7 @@ onBeforeUnmount(() => observer?.disconnect())
     <header class="z-20 flex-none border-b border-line/70 bg-canvas pt-[env(safe-area-inset-top)]">
       <div class="px-4 pt-2.5 pb-3">
         <div class="flex h-10 items-center gap-2.5">
-          <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none rounded-[6px] dark:invert">
+          <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none rounded-[6px]">
           <h1 class="m-0 truncate font-serif font-semibold" :class="view === 'browse' ? 'text-[21px]' : 'text-[23px]'">{{ title }}</h1>
           <span class="flex-1" />
           <button

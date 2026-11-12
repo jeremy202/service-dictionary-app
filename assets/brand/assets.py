@@ -19,5 +19,5 @@ def splash(bg, ink, sub, badge, out):
     </body>'''
     render(html,out,2732,2732)
 splash('#f5f2ea','#1b1b1b','#6a6a66',None,'splash.png')
-splash('#161616','#ebebe8','#9a9a95',('#ebebe8','#161616'),'splash-dark.png')
+splash('#161616','#ebebe8','#9a9a95',None,'splash-dark.png')
 print('ok')
