@@ -11,7 +11,7 @@ export default defineNuxtConfig({
       // Address of the Paystack payment service (payments/ folder, deployed on Netlify),
       // e.g. https://service-dictionary-pay.netlify.app. Can also be set with
       // NUXT_PUBLIC_PAYMENTS_API when building. Empty = payments switched off.
-      paymentsApi: '',
+      paymentsApi: 'https://service-dictionary-pay.netlify.app',
     },
   },
   vite: {
