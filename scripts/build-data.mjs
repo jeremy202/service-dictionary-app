@@ -33,11 +33,27 @@ function parseCsv(text) {
 
 const read = f => parseCsv(readFileSync(join(root, 'data/source', f), 'utf8'))
 
+// The abbreviations file repeats many pairs, word for word ("Commanding Officer, CO" three times)
+// or with only capitals/spacing changed ("Armoured personnel carrier, APC", "AV GAS" / "AVGAS").
+// Keep the first occurrence of each pair. Abbreviations with different meanings are all kept.
+const normMeaning = s => s.replace(/\s+/g, ' ').trim().replace(/\.$/, '').toLowerCase()
+const normAbbr = s => s.replace(/\s+/g, '').replace(/\.$/, '').toLowerCase()
+function dedupeAbbreviations(rows) {
+  const seen = new Set()
+  return rows.filter(([m, a]) => {
+    const k = `${normMeaning(m)}\u0000${normAbbr(a)}`
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+}
+
+const allAbbr = read('ABBREVIATION.csv')
 const data = {
   t: read('Words_and_meaning.csv').map(([w, m]) => [w, m]), // [term, meaning]
-  a: read('ABBREVIATION.csv').map(([m, a]) => [m, a]), // [meaning, abbreviation]
+  a: dedupeAbbreviations(allAbbr).map(([m, a]) => [m, a]), // [meaning, abbreviation]
   p: read('prowords.csv').map(([w, m]) => [w, m]), // [proword, meaning]
 }
 
 writeFileSync(join(root, 'app/data/dictionary.json'), JSON.stringify(data))
-console.log(`Terms: ${data.t.length}  Abbreviations: ${data.a.length}  Prowords: ${data.p.length}`)
+console.log(`Terms: ${data.t.length}  Abbreviations: ${data.a.length} (${allAbbr.length - data.a.length} duplicates removed)  Prowords: ${data.p.length}`)

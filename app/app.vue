@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
+import { App as CapApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
+import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
-const { tab, query, letter, abbrSort, words, results, letterOf, lettersAvailable } = useDictionary()
+const { tab, query, abbrSort, words, results, letterOf, lettersAvailable } = useDictionary()
+const library = useLibrary()
 
+type View = 'browse' | 'saved' | 'recent'
+const view = ref<View>('browse')
 const fmt = (n: number) => n.toLocaleString('en-US')
 
 // Highlight only meaningful words (skip "of", "a", "in"…) unless that is all the user typed
@@ -11,40 +16,36 @@ const highlightWords = computed(() => {
   return long.length ? long : words.value
 })
 
-/* ---------- search input (debounced) ---------- */
+/* ---------- search ---------- */
 const input = ref('')
+const searchEl = ref<HTMLInputElement>()
+const searchFocused = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 watch(input, (v) => {
   clearTimeout(timer)
-  timer = setTimeout(() => {
-    query.value = v
-    letter.value = ''
-    if (import.meta.client) window.scrollTo({ top: 0 })
-  }, 120)
+  timer = setTimeout(() => { query.value = v; scrollTop() }, 120)
 })
-
-/* ---------- tabs ↔ URL hash (#terms, #abbreviations, #prowords) ---------- */
-function readHash() {
-  const slug = window.location.hash.slice(1)
-  tab.value = TABS.find(t => t.slug === slug)?.id ?? 'all'
-  letter.value = ''
-}
-function selectTab(id: Tab) {
-  const slug = TABS.find(t => t.id === id)!.slug
-  if (window.location.hash.slice(1) === slug) readHash()
-  else window.location.hash = slug
+function cancelSearch() {
+  input.value = ''
+  query.value = ''
+  searchEl.value?.blur()
 }
 
-/* ---------- abbreviation sort preference (remembered in this browser) ---------- */
-watch(abbrSort, (v) => {
-  letter.value = ''
-  try { localStorage.setItem('sd-abbr-sort', v) } catch {}
-})
+/* ---------- filters ---------- */
+const FILTERS = TABS.map(t => ({ ...t, short: t.id === 'all' ? 'All' : t.label }))
+function setFilter(id: Tab) {
+  tab.value = id
+  scrollTop()
+}
+watch(abbrSort, (v) => { try { localStorage.setItem('sd-abbr-sort', v) } catch {} })
 
-/* ---------- progressive rendering ---------- */
-const PAGE = 120
+/* ---------- list (renders progressively for speed) ---------- */
+const scroller = ref<HTMLElement>()
+const sentinel = ref<HTMLElement>()
+const PAGE = 80
 const shown = ref(PAGE)
 watch(results, () => { shown.value = PAGE })
+const scrollTop = () => scroller.value?.scrollTo({ top: 0 })
 
 type Row = { type: 'letter'; key: string; letter: string } | { type: 'entry'; key: string; entry: Entry }
 const rows = computed<Row[]>(() => {
@@ -60,180 +61,244 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
-const sentinel = ref<HTMLElement>()
-const showTop = ref(false)
-let observer: IntersectionObserver | undefined
-const toTop = () => window.scrollTo({ top: 0 })
-const onScroll = () => { showTop.value = window.scrollY > 800 }
+const scrubLetters = computed(() => ALPHABET.filter(l => l !== '#' || lettersAvailable.value.has('#')))
+async function jumpTo(letter: string) {
+  tap()
+  const idx = results.value.findIndex(e => letterOf(e) === letter)
+  if (idx < 0) return
+  if (shown.value < idx + PAGE) shown.value = idx + PAGE
+  await nextTick()
+  const anchor = document.getElementById(`sec-${letter}`)
+  if (anchor && scroller.value) scroller.value.scrollTop = anchor.offsetTop
+}
 
+/* ---------- entry pages (a small stack, so "Back" works between linked entries) ---------- */
+const stack = ref<Entry[]>([])
+const current = computed(() => stack.value[stack.value.length - 1])
+function openEntry(e: Entry) {
+  searchEl.value?.blur()
+  stack.value = [...stack.value, e]
+  library.addRecent(e)
+}
+function closeEntry() { stack.value = stack.value.slice(0, -1) }
+function lookup(term: string) {
+  stack.value = []
+  view.value = 'browse'
+  tab.value = 't'
+  input.value = term
+  query.value = term
+}
+function toggleSave() {
+  if (!current.value) return
+  const now = library.toggleSaved(current.value)
+  tap(now ? 'medium' : 'light')
+  notify(now ? 'Saved' : 'Removed from saved')
+}
+
+/* ---------- views ---------- */
+function setView(v: View) {
+  if (view.value === v) { scrollTop(); return }
+  view.value = v
+  nextTick(scrollTop)
+}
+const title = computed(() => ({ browse: 'Service Dictionary', saved: 'Saved', recent: 'Recent' })[view.value])
+
+/* ---------- toast ---------- */
+const toast = ref('')
+let toastTimer: ReturnType<typeof setTimeout> | undefined
+function notify(m: string) {
+  toast.value = m
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value = '' }, 1500)
+}
+
+/* ---------- lifecycle ---------- */
+let observer: IntersectionObserver | undefined
 onMounted(() => {
   try {
     const s = localStorage.getItem('sd-abbr-sort')
     if (s === 'abbr' || s === 'full') abbrSort.value = s
   } catch {}
-  readHash()
-  window.addEventListener('hashchange', readHash)
-  window.addEventListener('scroll', onScroll, { passive: true })
   observer = new IntersectionObserver((entries) => {
-    if (entries[0]?.isIntersecting && shown.value < results.value.length) shown.value += PAGE
-  }, { rootMargin: '600px' })
+    if (entries[0]?.isIntersecting && view.value === 'browse' && shown.value < results.value.length) shown.value += PAGE
+  }, { root: scroller.value, rootMargin: '800px' })
   if (sentinel.value) observer.observe(sentinel.value)
+
+  // Android back button: close page → clear search → go to Dictionary → leave app
+  if (Capacitor.isNativePlatform()) {
+    CapApp.addListener('backButton', () => {
+      if (stack.value.length) closeEntry()
+      else if (input.value || searchFocused.value) cancelSearch()
+      else if (view.value !== 'browse') setView('browse')
+      else CapApp.minimizeApp()
+    })
+  }
 })
-onBeforeUnmount(() => {
-  window.removeEventListener('hashchange', readHash)
-  window.removeEventListener('scroll', onScroll)
-  observer?.disconnect()
-})
-
-/* ---------- cross references & toast ---------- */
-function lookup(term: string) {
-  selectTab('t')
-  input.value = term
-  query.value = term
-  window.scrollTo({ top: 0 })
-}
-
-const toast = ref('')
-let toastTimer: ReturnType<typeof setTimeout> | undefined
-function onCopied(ok: boolean) {
-  toast.value = ok ? 'Copied to clipboard' : 'Copy is not available here'
-  clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => { toast.value = '' }, 1500)
-}
-
-const scopeLabel = computed(() => TABS.find(t => t.id === tab.value)!.label.toLowerCase())
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <!-- Header -->
-    <header class="mx-auto max-w-3xl px-5 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-7 sm:pt-16">
-      <div class="flex items-center gap-4">
-        <img src="/logo.svg" alt="" width="56" height="56" class="size-14 flex-none drop-shadow-[0_8px_18px_rgba(22,51,42,.28)]">
-        <div class="min-w-0">
-          <h1 class="m-0 font-serif text-[clamp(30px,5.5vw,44px)] leading-[1.05] font-semibold tracking-tight">
-            Service Dictionary
-          </h1>
-          <p class="mt-1.5 text-[14px] text-muted">
-            <span class="font-medium text-ink/80">{{ fmt(COUNTS.t) }}</span> terms
-            <span class="mx-1.5 text-faint">•</span>
-            <span class="font-medium text-ink/80">{{ fmt(COUNTS.a) }}</span> abbreviations
-            <span class="mx-1.5 text-faint">•</span>
-            <span class="font-medium text-ink/80">{{ fmt(COUNTS.p) }}</span> prowords
-          </p>
+  <div class="flex h-dvh flex-col overflow-hidden bg-canvas text-ink">
+    <!-- ===== Top bar ===== -->
+    <header class="z-20 flex-none border-b border-line/70 bg-canvas pt-[env(safe-area-inset-top)]">
+      <div class="px-4 pt-2.5 pb-3">
+        <div class="flex h-10 items-center gap-2.5">
+          <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none">
+          <h1 class="m-0 truncate font-serif text-[22px] font-semibold tracking-tight">{{ title }}</h1>
+          <span class="flex-1" />
+          <button
+            v-if="view === 'recent' && library.recent.value.length"
+            type="button" class="cursor-pointer rounded-lg px-2 py-1 text-[15px] font-medium text-accent active:bg-line/50"
+            @click="library.clearRecent(); notify('History cleared')"
+          >Clear</button>
+          <span v-if="view === 'saved' && library.saved.value.length" class="text-[13px] text-muted tabular-nums">{{ library.saved.value.length }}</span>
         </div>
+
+        <template v-if="view === 'browse'">
+          <!-- Search -->
+          <div class="mt-2.5 flex items-center gap-2">
+            <label class="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-line/55 px-3 text-muted transition-colors focus-within:bg-paper focus-within:ring-2 focus-within:ring-accent/35">
+              <AppIcon name="search" :size="18" />
+              <input
+                ref="searchEl"
+                v-model="input"
+                type="search"
+                enterkeyhint="search"
+                placeholder="Search terms, abbreviations…"
+                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                aria-label="Search"
+                class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
+                @focus="searchFocused = true"
+                @blur="searchFocused = false"
+                @keydown.enter="searchEl?.blur()"
+              >
+              <button v-if="input" type="button" class="grid size-6 flex-none cursor-pointer place-items-center rounded-full bg-muted/40 text-paper" aria-label="Clear" @click="input = ''; searchEl?.focus()">
+                <AppIcon name="x" :size="13" />
+              </button>
+            </label>
+            <button
+              v-if="searchFocused || input"
+              type="button"
+              class="flex-none cursor-pointer px-1 text-[16px] font-medium text-accent"
+              @mousedown.prevent
+              @click="cancelSearch"
+            >Cancel</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
+            <button
+              v-for="f in FILTERS" :key="f.id" type="button"
+              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-[13.5px] font-medium whitespace-nowrap transition-colors"
+              :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
+              @click="setFilter(f.id)"
+            >
+              {{ f.short }}<span class="text-[11.5px] tabular-nums" :class="tab === f.id ? 'opacity-80' : 'text-muted'">{{ fmt(COUNTS[f.id]) }}</span>
+            </button>
+            <button
+              v-if="tab === 'a'" type="button"
+              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-line px-3 text-[13px] font-medium whitespace-nowrap text-ink/75 active:bg-line/50"
+              @click="abbrSort = abbrSort === 'full' ? 'abbr' : 'full'"
+            >
+              <AppIcon name="sort" :size="14" />
+              {{ abbrSort === 'full' ? 'By full form' : 'By abbreviation' }}
+            </button>
+          </div>
+        </template>
       </div>
     </header>
 
-    <!-- Sticky controls -->
-    <div class="sticky top-0 z-10 border-b border-line/70 bg-canvas/85 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 backdrop-blur-xl">
-      <div class="mx-auto max-w-3xl px-5">
-        <SearchBar v-model="input" />
+    <!-- ===== Content ===== -->
+    <div class="relative min-h-0 flex-1">
+      <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain">
+        <!-- Dictionary -->
+        <template v-if="view === 'browse'">
+          <p v-if="query.trim()" class="m-0 px-4 pt-3 pb-1 text-[12.5px] font-medium tracking-wide text-muted uppercase">
+            {{ fmt(results.length) }} result{{ results.length === 1 ? '' : 's' }}
+          </p>
+          <EmptyState
+            v-if="!results.length"
+            icon="search" title="No matches"
+            :text="tab === 'all' ? 'Try a shorter word or check the spelling.' : 'Nothing here. Try searching all entries.'"
+          >
+            <button v-if="tab !== 'all'" type="button" class="mt-4 cursor-pointer rounded-full bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Search all entries</button>
+          </EmptyState>
+          <template v-for="row in rows" :key="row.key">
+            <template v-if="row.type === 'letter'">
+              <div :id="`sec-${row.letter}`" />
+              <div class="sticky top-0 z-[1] border-b border-line/60 bg-canvas/95 px-4 py-1 font-serif text-[15px] font-semibold text-accent backdrop-blur">
+                {{ row.letter }}
+              </div>
+            </template>
+            <EntryRow
+              v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'"
+              :saved="library.isSaved(row.entry)" @open="openEntry"
+            />
+          </template>
+        </template>
 
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-          <div class="flex gap-1 overflow-x-auto rounded-xl border border-line/80 bg-paper p-1 shadow-card" role="tablist">
-            <button
-              v-for="t in TABS"
-              :key="t.id"
-              type="button"
-              role="tab"
-              :aria-selected="tab === t.id"
-              class="cursor-pointer rounded-lg px-3.5 py-1.5 text-[13.5px] font-medium whitespace-nowrap transition-all"
-              :class="tab === t.id ? 'bg-accent text-paper shadow-sm' : 'text-muted hover:bg-canvas hover:text-ink'"
-              @click="selectTab(t.id)"
-            >
-              {{ t.label }}<span class="ml-1.5 text-[11.5px] tabular-nums" :class="tab === t.id ? 'opacity-80' : 'opacity-60'">{{ fmt(COUNTS[t.id]) }}</span>
-            </button>
-          </div>
+        <!-- Saved -->
+        <template v-else-if="view === 'saved'">
+          <EmptyState v-if="!library.saved.value.length" icon="bookmark" title="No saved entries" text="Tap the bookmark on any entry to keep it here for quick reference." />
+          <EntryRow v-for="e in library.saved.value" :key="e.id" :entry="e" :words="[]" show-kind @open="openEntry" />
+        </template>
 
-          <label v-if="tab === 'a'" class="flex items-center gap-2 text-[13px] text-muted">
-            Sort by
-            <select v-model="abbrSort" class="cursor-pointer rounded-lg border border-line/80 bg-paper px-2.5 py-1.5 text-ink shadow-card outline-none focus:border-accent/60">
-              <option value="full">Full form</option>
-              <option value="abbr">Abbreviation</option>
-            </select>
-          </label>
-        </div>
+        <!-- Recent -->
+        <template v-else>
+          <EmptyState v-if="!library.recent.value.length" icon="clock" title="Nothing yet" text="Entries you open will appear here so you can find them again." />
+          <EntryRow v-for="e in library.recent.value" :key="e.id" :entry="e" :words="[]" show-kind :saved="library.isSaved(e)" @open="openEntry" />
+        </template>
 
-        <AlphabetBar v-model="letter" :available="lettersAvailable" :disabled="!!query.trim()" />
-      </div>
+        <div ref="sentinel" class="h-6" />
+      </main>
+
+      <!-- A–Z index -->
+      <IndexScrubber
+        v-if="view === 'browse' && !query.trim() && results.length > 30"
+        class="absolute top-0 right-0 bottom-0 z-[2]"
+        :letters="scrubLetters" :available="lettersAvailable" @jump="jumpTo"
+      />
     </div>
 
-    <!-- Results -->
-    <main class="mx-auto max-w-3xl px-5">
-      <div class="mt-5 mb-1 flex flex-wrap items-center justify-between gap-2.5 text-[13px] text-muted">
-        <template v-if="query.trim()">
-          <span><b class="font-semibold text-ink">{{ fmt(results.length) }}</b> result{{ results.length === 1 ? '' : 's' }} for “{{ query.trim() }}” in {{ scopeLabel }}</span>
-          <button v-if="tab !== 'all'" type="button" class="cursor-pointer font-medium text-accent hover:text-accent-deep" @click="selectTab('all')">
-            Search all entries →
-          </button>
-        </template>
-        <template v-else-if="letter">
-          <span><b class="font-semibold text-ink">{{ fmt(results.length) }}</b> {{ scopeLabel }} under “{{ letter }}”</span>
-          <button type="button" class="cursor-pointer font-medium text-accent hover:text-accent-deep" @click="letter = ''">
-            Show all letters
-          </button>
-        </template>
-        <template v-else>
-          <span>Browsing <b class="font-semibold text-ink">{{ fmt(results.length) }}</b> {{ scopeLabel }}, A–Z</span>
-          <span class="hidden sm:inline">Press <kbd class="rounded border border-line bg-paper px-1 font-mono text-[11px]">/</kbd> to search</span>
-        </template>
-      </div>
-
-      <div v-if="!results.length" class="my-8 rounded-2xl border border-dashed border-line bg-paper/60 px-6 py-16 text-center">
-        <div class="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-accent-soft text-accent">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        </div>
-        <h3 class="m-0 font-serif text-xl font-semibold">No matches found</h3>
-        <p class="mt-1 text-[14px] text-muted">Try a shorter word, check the spelling, or search across all entries.</p>
-      </div>
-
-      <template v-for="row in rows" :key="row.key">
-        <div v-if="row.type === 'letter'" class="mt-9 mb-3 flex items-center gap-4 first:mt-5">
-          <span class="font-serif text-[34px] leading-none font-semibold text-accent">{{ row.letter }}</span>
-          <span class="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
-        </div>
-        <EntryCard
-          v-else
-          :entry="row.entry"
-          :words="highlightWords"
-          :show-badge="tab === 'all'"
-          @lookup="lookup"
-          @copied="onCopied"
-        />
-      </template>
-      <div ref="sentinel" class="h-10" />
-    </main>
-
-    <footer class="mx-auto max-w-3xl px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+3.5rem)] text-center text-[12.5px] text-muted">
-      <span class="font-serif text-[14px] text-ink/70">Service Dictionary</span>
-      <span class="mx-2 text-faint">•</span>{{ fmt(COUNTS.all) }} entries
-    </footer>
-
-    <!-- Back to top -->
-    <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2" enter-active-class="transition" leave-active-class="transition">
+    <!-- ===== Bottom tab bar ===== -->
+    <nav
+      v-show="!searchFocused"
+      class="z-20 flex flex-none border-t border-line/80 bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
+      aria-label="Sections"
+    >
       <button
-        v-if="showTop"
-        type="button"
-        aria-label="Back to top"
-        class="fixed right-5 bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] grid size-11 cursor-pointer place-items-center rounded-full bg-accent text-paper shadow-lift transition hover:bg-accent-deep"
-        @click="toTop"
+        v-for="t in ([['browse', 'Dictionary', 'book'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock']] as const)"
+        :key="t[0]" type="button"
+        class="flex h-14 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors"
+        :class="view === t[0] ? 'text-accent' : 'text-muted'"
+        :aria-current="view === t[0] ? 'page' : undefined"
+        @click="setView(t[0])"
       >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+        <AppIcon :name="t[2]" :size="23" :filled="view === t[0]" />
+        <span class="text-[11px] font-semibold tracking-wide">{{ t[1] }}</span>
       </button>
+    </nav>
+
+    <!-- ===== Entry page ===== -->
+    <Transition
+      enter-from-class="translate-x-full" leave-to-class="translate-x-full"
+      enter-active-class="transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+      leave-active-class="transition-transform duration-250 ease-in"
+    >
+      <EntryDetail
+        v-if="current" :key="current.id"
+        :entry="current" :saved="library.isSaved(current)" :can-go-back="stack.length > 1"
+        @close="closeEntry" @toggle-save="toggleSave" @open="openEntry" @lookup="lookup" @notify="notify"
+      />
     </Transition>
 
-    <!-- Toast -->
-    <Transition
-      enter-from-class="opacity-0 translate-y-3" leave-to-class="opacity-0 translate-y-3"
-      enter-active-class="transition duration-200" leave-active-class="transition duration-200"
-    >
+    <!-- ===== Toast ===== -->
+    <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2" enter-active-class="transition duration-200" leave-active-class="transition duration-200">
       <div
         v-if="toast"
-        class="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13px] text-canvas shadow-lift"
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13.5px] font-medium text-canvas shadow-lift"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="m5 12 5 5L20 7" /></svg>
-        {{ toast }}
+        <AppIcon name="check" :size="15" />{{ toast }}
       </div>
     </Transition>
   </div>

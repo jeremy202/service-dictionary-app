@@ -21,6 +21,7 @@
   --color-accent-deep: var(--accent-deep);
   --color-accent-soft: var(--accent-soft);
   --color-highlight: var(--highlight);
+  --color-brass: var(--brass);
   --color-term: var(--term);
   --color-term-soft: var(--term-soft);
   --color-abbr: var(--abbr);
@@ -43,6 +44,7 @@
   --accent-deep: #1f4232;
   --accent-soft: #e2ebe4;
   --highlight: #f8e7a8;
+  --brass: #b48a3a;
   --term: #2e5c45;
   --term-soft: #e2ebe4;
   --abbr: #94531f;
@@ -63,6 +65,7 @@
     --accent-deep: #2e5c45;
     --accent-soft: #213028;
     --highlight: #5a4a16;
+    --brass: #d4ad5c;
     --term: #8cc6a5;
     --term-soft: #213028;
     --abbr: #e6ab7a;
@@ -75,19 +78,22 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  html, body { height: 100%; overscroll-behavior: none; }
   body {
     @apply bg-canvas text-ink font-sans antialiased;
     font-size: 15.5px;
-    line-height: 1.7;
-    /* very soft paper texture */
-    background-image: radial-gradient(circle at 1px 1px, rgb(120 110 80 / .07) 1px, transparent 0);
-    background-size: 22px 22px;
+    line-height: 1.6;
+    overflow: hidden; /* the app scrolls inside its own list, like a native app */
   }
   ::selection { background: var(--highlight); }
   mark { @apply bg-highlight text-inherit rounded-[3px] px-px; }
   input[type="search"]::-webkit-search-cancel-button { appearance: none; }
-  /* Mobile app feel: no grey tap flash, no rubber-band text selection on controls */
   html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
   button, nav, kbd { -webkit-user-select: none; user-select: none; }
+  button { touch-action: manipulation; }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
