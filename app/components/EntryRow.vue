@@ -11,7 +11,22 @@ const props = defineProps<{ entry: Entry; words: string[]; showKind?: boolean; s
 defineEmits<{ open: [entry: Entry] }>()
 
 const title = computed(() => (props.entry.kind === 'a' ? props.entry.abbr ?? '' : props.entry.headword))
-const subtitle = computed(() => spaceOut(props.entry.meaning.replace(/\s+/g, ' ')))
+// Short preview of the meaning; the full text is on the entry page.
+// When the search word is found further into a long meaning, the preview starts
+// just before it ("…at any stage of operations…") so you can see why it matched.
+const subtitle = computed(() => {
+  const text = spaceOut(props.entry.meaning.replace(/\s+/g, ' '))
+  if (!props.words.length) return text
+  const lower = text.toLowerCase()
+  let at = -1
+  for (const w of props.words) {
+    const i = lower.indexOf(w)
+    if (i !== -1 && (at === -1 || i < at)) at = i
+  }
+  if (at < 70) return text
+  const start = text.lastIndexOf(' ', at - 28)
+  return `…${text.slice(start + 1)}`
+})
 
 const TAG = {
   t: { label: 'Term', cls: 'text-term bg-term-soft' },
@@ -35,7 +50,7 @@ const titleCls = {
     <!-- Abbreviations tab: abbreviation | full form -->
     <template v-if="compact && entry.kind === 'a'">
       <span class="w-[5.75rem] flex-none truncate font-mono text-[14.5px] font-semibold text-abbr" v-html="highlight(entry.abbr ?? '', words)" />
-      <span class="min-w-0 flex-1 text-[15.5px] leading-snug" v-html="highlight(entry.meaning, words)" />
+      <span class="line-clamp-2 min-w-0 flex-1 text-[15.5px] leading-snug" v-html="highlight(entry.meaning, words)" />
     </template>
 
     <!-- Standard row -->
@@ -49,8 +64,8 @@ const titleCls = {
         >{{ TAG[entry.kind].label }}</span>
       </span>
       <span
-        class="mt-0.5 block text-[13.5px] leading-snug text-muted"
-        :class="entry.kind === 'a' ? 'truncate text-ink/75' : 'line-clamp-2'"
+        class="mt-0.5 text-[13.5px] leading-snug text-muted"
+        :class="entry.kind === 'a' ? 'line-clamp-1 text-ink/75' : 'line-clamp-2'"
         v-html="highlight(subtitle, words)"
       />
     </span>

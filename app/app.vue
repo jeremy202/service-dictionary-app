@@ -3,7 +3,7 @@ import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
-const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch } = useDictionary()
+const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
 const library = useLibrary()
 
 type View = 'browse' | 'saved' | 'recent'
@@ -32,6 +32,25 @@ watch(input, (v) => {
 function onSearchInput(ev: Event) {
   input.value = (ev.target as HTMLInputElement).value
 }
+// A new search covers every entry (All); the previous filter comes back when the search is cleared
+let filterBeforeSearch: Tab | null = null
+watch(query, (q, old) => {
+  const has = !!q.trim(); const had = !!(old ?? '').trim()
+  if (has && !had && view.value === 'browse' && tab.value !== 'all') { filterBeforeSearch = tab.value; tab.value = 'all' }
+  if (!has && had && filterBeforeSearch) { tab.value = filterBeforeSearch; filterBeforeSearch = null }
+})
+function useSuggestion(s: string) {
+  input.value = s
+  query.value = s
+}
+const searchPlaceholder = computed(() => ({
+  browse: 'Search everything…',
+  saved: 'Search saved entries…',
+  recent: 'Search recent entries…',
+})[view.value])
+const savedList = computed(() => library.saved.value.filter(matchesSearch))
+const recentList = computed(() => library.recent.value.filter(matchesSearch))
+
 function cancelSearch() {
   input.value = ''
   query.value = ''
@@ -41,6 +60,7 @@ function cancelSearch() {
 /* ---------- filters ---------- */
 const FILTERS = TABS.map(t => ({ ...t, short: t.id === 'all' ? 'All' : t.label }))
 function setFilter(id: Tab) {
+  filterBeforeSearch = null
   tab.value = id
   scrollTop()
 }
@@ -170,8 +190,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <span v-if="view === 'saved' && library.saved.value.length" class="text-[13px] text-muted tabular-nums">{{ library.saved.value.length }}</span>
         </div>
 
-        <template v-if="view === 'browse'">
-          <!-- Search -->
+        <!-- Search (every tab) -->
           <div class="mt-2.5 flex items-center gap-2">
             <label class="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-line/55 px-3 text-muted transition-colors focus-within:bg-paper focus-within:ring-2 focus-within:ring-accent/35">
               <AppIcon name="search" :size="18" />
@@ -180,7 +199,7 @@ onBeforeUnmount(() => observer?.disconnect())
                 :value="input"
                 type="search"
                 enterkeyhint="search"
-                placeholder="Search terms, abbreviations…"
+                :placeholder="searchPlaceholder"
                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                 aria-label="Search"
                 class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
@@ -202,15 +221,15 @@ onBeforeUnmount(() => observer?.disconnect())
             >Cancel</button>
           </div>
 
-          <!-- Filters -->
-          <div class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
+          <!-- Filters (Dictionary tab); while searching they show how many matches each has -->
+          <div v-if="view === 'browse'" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
             <button
               v-for="f in FILTERS" :key="f.id" type="button"
               class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-[13.5px] font-medium whitespace-nowrap transition-colors"
               :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
               @click="setFilter(f.id)"
             >
-              {{ f.short }}<span class="text-[11.5px] tabular-nums" :class="tab === f.id ? 'opacity-80' : 'text-muted'">{{ fmt(COUNTS[f.id]) }}</span>
+              {{ f.short }}<span class="text-[11.5px] tabular-nums" :class="tab === f.id ? 'opacity-80' : 'text-muted'">{{ fmt(query.trim() ? matchCounts[f.id] : COUNTS[f.id]) }}</span>
             </button>
             <button
               v-if="tab === 'a'" type="button"
@@ -221,7 +240,6 @@ onBeforeUnmount(() => observer?.disconnect())
               {{ abbrSort === 'full' ? 'By full form' : 'By abbreviation' }}
             </button>
           </div>
-        </template>
       </div>
     </header>
 
@@ -233,9 +251,16 @@ onBeforeUnmount(() => observer?.disconnect())
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
-            :text="tab === 'all' ? 'Try a shorter word or check the spelling.' : 'Nothing here. Try searching all entries.'"
+            :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} match, but ${fmt(matchCounts.all)} other entries do.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
           >
-            <button v-if="tab !== 'all'" type="button" class="mt-4 cursor-pointer rounded-full bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Search all entries</button>
+            <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-full bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
+            <div v-else-if="suggestions.length" class="mt-3 flex flex-wrap justify-center gap-2">
+              <button
+                v-for="sg in suggestions" :key="sg" type="button"
+                class="cursor-pointer rounded-full border border-accent/40 bg-paper px-4 py-1.5 text-[15px] font-medium text-accent active:bg-accent-soft"
+                @click="useSuggestion(sg)"
+              >{{ sg }}</button>
+            </div>
           </EmptyState>
           <template v-for="row in rows" :key="row.key">
             <template v-if="row.type === 'letter'">
@@ -261,13 +286,15 @@ onBeforeUnmount(() => observer?.disconnect())
         <!-- Saved -->
         <template v-else-if="view === 'saved'">
           <EmptyState v-if="!library.saved.value.length" icon="bookmark" title="No saved entries" text="Tap the bookmark on any entry to keep it here for quick reference." />
-          <EntryRow v-for="e in library.saved.value" :key="e.id" :entry="e" :words="[]" show-kind @open="openEntry" />
+          <EmptyState v-else-if="!savedList.length" icon="search" title="No matches" text="None of your saved entries match. Clear the search to see them all." />
+          <EntryRow v-for="e in savedList" :key="e.id" :entry="e" :words="highlightWords" show-kind @open="openEntry" />
         </template>
 
         <!-- Recent -->
         <template v-else>
           <EmptyState v-if="!library.recent.value.length" icon="clock" title="Nothing yet" text="Entries you open will appear here so you can find them again." />
-          <EntryRow v-for="e in library.recent.value" :key="e.id" :entry="e" :words="[]" show-kind :saved="library.isSaved(e)" @open="openEntry" />
+          <EmptyState v-else-if="!recentList.length" icon="search" title="No matches" text="None of your recent entries match. Clear the search to see them all." />
+          <EntryRow v-for="e in recentList" :key="e.id" :entry="e" :words="highlightWords" show-kind :saved="library.isSaved(e)" @open="openEntry" />
         </template>
 
         <div ref="sentinel" class="h-6" />
