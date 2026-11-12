@@ -3,7 +3,7 @@ import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
-const { tab, query, abbrSort, words, results, letterOf, lettersAvailable } = useDictionary()
+const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch } = useDictionary()
 const library = useLibrary()
 
 type View = 'browse' | 'saved' | 'recent'
@@ -23,8 +23,15 @@ const searchFocused = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
 watch(input, (v) => {
   clearTimeout(timer)
-  timer = setTimeout(() => { query.value = v; scrollTop() }, 120)
+  // Search as you type: update almost immediately (clearing is instant)
+  if (!v.trim()) { query.value = v; return }
+  timer = setTimeout(() => { query.value = v; scrollTop() }, 60)
 })
+// Android keyboards hold the current word "in progress" until a space is typed, and v-model
+// waits for it. Reading the input event directly updates results on every letter.
+function onSearchInput(ev: Event) {
+  input.value = (ev.target as HTMLInputElement).value
+}
 function cancelSearch() {
   input.value = ''
   query.value = ''
@@ -47,17 +54,26 @@ const shown = ref(PAGE)
 watch(results, () => { shown.value = PAGE })
 const scrollTop = () => scroller.value?.scrollTo({ top: 0 })
 
-type Row = { type: 'letter'; key: string; letter: string } | { type: 'entry'; key: string; entry: Entry }
+type Row =
+  | { type: 'letter'; key: string; letter: string }
+  | { type: 'label'; key: string; label: string; count: number }
+  | { type: 'entry'; key: string; entry: Entry }
+const nameMatches = computed(() => (query.value.trim() ? results.value.filter(isNameMatch).length : 0))
 const rows = computed<Row[]>(() => {
   const out: Row[] = []
+  const searching = !!query.value.trim()
   let last = ''
-  for (const e of results.value.slice(0, shown.value)) {
-    if (!query.value.trim()) {
+  results.value.slice(0, shown.value).forEach((e, i) => {
+    if (searching) {
+      // "Matching names" first, then "Found in meanings"
+      if (i === 0 && nameMatches.value) out.push({ type: 'label', key: 'lbl-names', label: 'Matching names', count: nameMatches.value })
+      if (i === nameMatches.value) out.push({ type: 'label', key: 'lbl-meanings', label: 'Found in meanings', count: results.value.length - nameMatches.value })
+    } else {
       const l = letterOf(e)
       if (l !== last) { out.push({ type: 'letter', key: `L${l}`, letter: l }); last = l }
     }
     out.push({ type: 'entry', key: `E${e.id}`, entry: e })
-  }
+  })
   return out
 })
 
@@ -161,13 +177,14 @@ onBeforeUnmount(() => observer?.disconnect())
               <AppIcon name="search" :size="18" />
               <input
                 ref="searchEl"
-                v-model="input"
+                :value="input"
                 type="search"
                 enterkeyhint="search"
                 placeholder="Search terms, abbreviations…"
                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                 aria-label="Search"
                 class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
+                @input="onSearchInput"
                 @focus="searchFocused = true"
                 @blur="searchFocused = false"
                 @keydown.enter="searchEl?.blur()"
@@ -213,9 +230,6 @@ onBeforeUnmount(() => observer?.disconnect())
       <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain">
         <!-- Dictionary -->
         <template v-if="view === 'browse'">
-          <p v-if="query.trim()" class="m-0 px-4 pt-3 pb-1 text-[12.5px] font-medium tracking-wide text-muted uppercase">
-            {{ fmt(results.length) }} result{{ results.length === 1 ? '' : 's' }}
-          </p>
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
@@ -230,6 +244,13 @@ onBeforeUnmount(() => observer?.disconnect())
                 {{ row.letter }}
               </div>
             </template>
+            <div
+              v-else-if="row.type === 'label'"
+              class="sticky top-0 z-[1] flex items-baseline justify-between border-b border-line/60 bg-canvas/95 px-4 pt-3 pb-1.5 backdrop-blur"
+            >
+              <span class="text-[12px] font-semibold tracking-wider text-muted uppercase">{{ row.label }}</span>
+              <span class="pr-1 text-[12px] text-muted tabular-nums">{{ fmt(row.count) }}</span>
+            </div>
             <EntryRow
               v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'"
               :saved="library.isSaved(row.entry)" @open="openEntry"

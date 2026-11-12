@@ -1,5 +1,18 @@
 import { ENTRIES, type AbbrSort, type Entry, type Tab } from '~/utils/dictionary'
 
+/** Ranking groups for search results (lower = better). */
+export const Rank = {
+  Exact: 0, // headword or abbreviation is exactly what was typed
+  Prefix: 1, // headword or abbreviation starts with what was typed
+  WordStart: 2, // every typed word starts a word in the headword
+  InHeadword: 3, // every typed word appears somewhere in the headword
+  MeaningWordStart: 4, // every typed word starts a word in the meaning
+  InMeaning: 5, // every typed word appears somewhere in the meaning
+} as const
+type Rank = (typeof Rank)[keyof typeof Rank]
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 export function useDictionary() {
   const tab = ref<Tab>('all')
   const query = ref('')
@@ -17,32 +30,51 @@ export function useDictionary() {
   }
 
   const pool = computed(() => (tab.value === 'all' ? ENTRIES : ENTRIES.filter(e => e.kind === tab.value)))
-
   const lettersAvailable = computed(() => new Set(pool.value.map(letterOf)))
 
-  // Ranking: exact match → starts with → headword contains → meaning contains
-  function score(e: Entry, q: string, w: string[]) {
-    if (e.lh === q || e.la === q) return 0
-    if (e.la.startsWith(q) || e.lh.startsWith(q)) return 1
-    if (w.every(t => e.lh.includes(t) || e.la.includes(t))) return 2
-    if (w.every(t => e.lh.includes(t) || e.la.includes(t) || e.lm.includes(t))) return 3
+  /** Rank of each matching entry, for the current search. */
+  const ranks = new Map<number, Rank>()
+
+  function rank(e: Entry, q: string, w: string[], starts: RegExp[]): Rank | -1 {
+    if (e.lh === q || e.la === q) return Rank.Exact
+    if (e.la.startsWith(q) || e.lh.startsWith(q)) return Rank.Prefix
+    // A single letter only matches the start of a headword or abbreviation
+    if (q.length < 2) return -1
+    const head = `${e.lh} ${e.la}`
+    if (starts.every(r => r.test(head))) return Rank.WordStart
+    if (w.every(t => head.includes(t))) return Rank.InHeadword
+    if (starts.every(r => r.test(e.lm))) return Rank.MeaningWordStart
+    if (w.every(t => e.lm.includes(t))) return Rank.InMeaning
     return -1
   }
 
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
   const results = computed<Entry[]>(() => {
-    const q = query.value.trim().toLowerCase()
-    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+    const q = query.value.trim().toLowerCase().replace(/\s+/g, ' ')
+    ranks.clear()
     if (q) {
-      return pool.value
-        .map(e => [score(e, q, words.value), e] as const)
-        .filter(([s]) => s >= 0)
-        .sort((a, b) => a[0] - b[0] || collator.compare(sortKey(a[1]), sortKey(b[1])))
-        .map(([, e]) => e)
+      const w = words.value
+      const starts = w.map(t => new RegExp(`(^|[^a-z0-9])${escapeRe(t)}`))
+      const scored: [Rank, Entry][] = []
+      for (const e of pool.value) {
+        const r = rank(e, q, w, starts)
+        if (r !== -1) scored.push([r, e])
+      }
+      scored.sort((a, b) =>
+        a[0] - b[0]
+        || (a[0] <= Rank.Prefix ? sortKey(a[1]).length - sortKey(b[1]).length : 0) // shorter, closer matches first
+        || collator.compare(sortKey(a[1]), sortKey(b[1])))
+      for (const [r, e] of scored) ranks.set(e.id, r)
+      return scored.map(([, e]) => e)
     }
     let list = [...pool.value].sort((a, b) => collator.compare(sortKey(a), sortKey(b)))
     if (letter.value) list = list.filter(e => letterOf(e) === letter.value)
     return list
   })
 
-  return { tab, query, letter, abbrSort, words, results, letterOf, lettersAvailable }
+  /** True when the entry was found in its headword/abbreviation (not only in its meaning). */
+  const isNameMatch = (e: Entry) => (ranks.get(e.id) ?? 0) <= Rank.InHeadword
+
+  return { tab, query, letter, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch }
 }
