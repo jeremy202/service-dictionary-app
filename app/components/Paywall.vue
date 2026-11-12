@@ -110,7 +110,7 @@ async function restore() {
     <div class="sheet-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="emit('close')" />
 
     <!-- Sheet -->
-    <div class="sheet relative flex max-h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-canvas shadow-2xl sm:rounded-[28px]">
+    <div class="sheet relative flex max-h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[10px] border-t-4 border-accent bg-canvas shadow-2xl sm:rounded-[10px]">
       <!-- Handle + close -->
       <div class="relative flex-none pt-2.5">
         <div class="mx-auto h-1.5 w-10 rounded-full bg-line" />
@@ -122,10 +122,10 @@ async function restore() {
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
         <!-- Header -->
         <div class="flex items-center gap-3.5 pt-3 pr-8">
-          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none drop-shadow-[0_8px_16px_rgba(22,51,42,.28)]">
+          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none">
           <div class="min-w-0">
-            <span class="text-[10.5px] font-bold tracking-[.16em] text-brass uppercase">Service Dictionary Premium</span>
-            <h2 class="m-0 font-serif text-[23px] leading-tight font-semibold tracking-tight">{{ headline }}</h2>
+            <span class="font-mono text-[10px] font-semibold tracking-[.14em] text-brass uppercase">Service Dictionary Premium</span>
+            <h2 class="m-0 font-serif text-[25px] leading-tight font-bold tracking-[.02em] uppercase">{{ headline }}</h2>
           </div>
         </div>
         <p class="mt-2.5 mb-0 text-[14px] leading-relaxed text-muted">{{ subline }}</p>
@@ -169,14 +169,14 @@ async function restore() {
               :class="selected === p.id ? 'border-accent bg-accent text-paper' : 'border-faint'"
             ><AppIcon v-if="selected === p.id" name="check" :size="12" /></span>
             <span class="min-w-0 flex-1">
-              <span class="block text-[15.5px] font-semibold">{{ p.name }}</span>
+              <span class="block font-serif text-[17px] font-semibold tracking-[.04em] uppercase">{{ p.name }}</span>
               <span class="block text-[12.5px] text-muted">{{ p.note }}</span>
             </span>
             <span class="text-right">
-              <span class="block font-serif text-[21px] leading-none font-semibold">{{ naira(p.price) }}</span>
+              <span class="block font-serif text-[24px] leading-none font-bold">{{ naira(p.price) }}</span>
               <span class="mt-1 block text-[11.5px] text-muted">{{ p.period }}</span>
             </span>
-            <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-full bg-brass px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#1b211e] uppercase">{{ p.badge }}</span>
+            <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-sm bg-brass px-2 py-0.5 font-mono text-[9.5px] font-semibold tracking-[.1em] text-on-brass uppercase">{{ p.badge }}</span>
           </button>
         </div>
 
@@ -193,7 +193,7 @@ async function restore() {
           >
         </div>
 
-        <p v-if="error" class="mt-3 mb-0 rounded-xl bg-[#fbe9e7] px-3.5 py-2.5 text-[13.5px] text-[#9a3412] dark:bg-[#3a1f19] dark:text-[#f5b39a]">{{ error }}</p>
+        <p v-if="error" class="mt-3 mb-0 rounded-xl border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[13.5px] text-danger">{{ error }}</p>
       </div>
 
       <!-- Actions -->

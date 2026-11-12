@@ -54,7 +54,7 @@ async function share() {
   if (!ok) copy()
 }
 
-const kindChip = { t: 'text-term bg-term-soft', a: 'text-abbr bg-abbr-soft', p: 'text-pro bg-pro-soft' }
+const kindChip = { t: 'text-term border-term/50', a: 'text-abbr border-abbr/50', p: 'text-pro border-pro/50' }
 const body = ref<HTMLElement>()
 watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
 </script>
@@ -90,18 +90,18 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
     <!-- Content -->
     <div ref="body" class="flex-1 overflow-y-auto overscroll-contain">
       <article class="mx-auto max-w-2xl px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+3rem)]">
-        <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase" :class="kindChip[entry.kind]">
+        <span class="inline-block rounded-[2px] border px-1.5 py-0.5 font-mono text-[10.5px] leading-none font-semibold tracking-[.1em] uppercase" :class="kindChip[entry.kind]">
           {{ KIND_LABEL[entry.kind] }}
         </span>
 
         <template v-if="entry.kind === 'a'">
           <h1 class="mt-3 mb-0 font-mono text-[34px] leading-tight font-semibold tracking-tight text-abbr [overflow-wrap:anywhere]">{{ entry.abbr }}</h1>
-          <p class="mt-2 mb-0 font-serif text-[25px] leading-snug font-medium">{{ entry.headword }}</p>
+          <p class="mt-2 mb-0 font-serif text-[27px] leading-snug font-medium">{{ entry.headword }}</p>
         </template>
         <h1 v-else-if="entry.kind === 'p'" class="mt-3 mb-0 font-mono text-[25px] leading-snug font-semibold tracking-wide text-pro">{{ entry.headword }}</h1>
-        <h1 v-else class="mt-3 mb-0 font-serif text-[31px] leading-[1.15] font-semibold tracking-tight">{{ entry.headword }}</h1>
+        <h1 v-else class="mt-3 mb-0 font-serif text-[34px] leading-[1.1] font-semibold">{{ entry.headword }}</h1>
 
-        <div class="my-5 h-[3px] w-10 rounded-full bg-brass" />
+        <div class="my-5 h-[3px] w-10 bg-brass" />
 
         <!-- Cross reference ("See 'Echelon'") -->
         <button
@@ -112,7 +112,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
         >
           <span class="min-w-0 flex-1">
             <span class="block text-[12px] font-semibold tracking-wider text-muted uppercase">{{ entry.meaning.trim().split(/\s/)[0] }}</span>
-            <span class="block font-serif text-[19px] font-semibold">{{ xref }}</span>
+            <span class="block font-serif text-[21px] font-semibold">{{ xref }}</span>
           </span>
           <span class="text-accent"><AppIcon name="arrow-right" /></span>
         </button>
@@ -138,7 +138,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
           <div class="flex flex-wrap gap-2">
             <button
               v-for="o in otherAbbrs" :key="o.id" type="button"
-              class="cursor-pointer rounded-lg bg-abbr-soft px-3 py-1.5 font-mono text-[14.5px] font-semibold text-abbr active:opacity-70"
+              class="cursor-pointer rounded-sm border border-abbr/40 bg-abbr-soft px-3 py-1.5 font-mono text-[14.5px] font-semibold text-abbr active:opacity-70"
               @click="emit('open', o)"
             >{{ o.abbr }}</button>
           </div>

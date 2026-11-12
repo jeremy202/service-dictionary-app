@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#356b51"/><stop offset="1" stop-color="#16332a"/></linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b5320"/><stop offset="1" stop-color="#434a1c"/></linearGradient>
   <radialGradient id="glow" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".10"/><stop offset=".6" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-  <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c97e"/><stop offset="1" stop-color="#b48a3a"/></linearGradient>
-</defs><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#glow)"/>
-    <path d="M512.0 506.4 C449.6 454.4 345.6 435.7 252.0 452.3 L252.0 733.1 C345.6 716.5 449.6 735.2 512.0 787.2 Z" fill="#fbf6ea"/>
-    <path d="M512.0 506.4 C574.4 454.4 678.4 435.7 772.0 452.3 L772.0 733.1 C678.4 716.5 574.4 735.2 512.0 787.2 Z" fill="#fbf6ea" opacity=".88"/>
-    <path d="M512.0 514.7 L512.0 774.7" stroke="#16332a" stroke-opacity=".35" stroke-width="6.2" stroke-linecap="round"/>
-    <path d="M310.2 537.6 C374.7 527.2 433.0 537.6 474.6 564.6 M310.2 600.0 C374.7 589.6 433.0 600.0 474.6 627.0 M310.2 662.4 C374.7 652.0 433.0 662.4 474.6 689.4" stroke="#16332a" stroke-opacity=".18" stroke-width="10.4" fill="none" stroke-linecap="round"/>
-    <path d="M549.4 564.6 C591.0 537.6 649.3 527.2 713.8 537.6 M549.4 627.0 C591.0 600.0 649.3 589.6 713.8 600.0 M549.4 689.4 C591.0 662.4 649.3 652.0 713.8 662.4" stroke="#16332a" stroke-opacity=".14" stroke-width="10.4" fill="none" stroke-linecap="round"/>
-    <path d="M395.5 325.4 L512.0 256.8 L628.5 325.4" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M395.5 385.8 L512.0 317.1 L628.5 385.8" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9ab6e"/><stop offset="1" stop-color="#c9ab6e"/></linearGradient>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/>
+    <path d="M512.0 506.4 C449.6 454.4 345.6 435.7 252.0 452.3 L252.0 733.1 C345.6 716.5 449.6 735.2 512.0 787.2 Z" fill="#efe8d4"/>
+    <path d="M512.0 506.4 C574.4 454.4 678.4 435.7 772.0 452.3 L772.0 733.1 C678.4 716.5 574.4 735.2 512.0 787.2 Z" fill="#efe8d4" opacity=".88"/>
+    <path d="M512.0 514.7 L512.0 774.7" stroke="#434a1c" stroke-opacity=".35" stroke-width="6.2" stroke-linecap="round"/>
+    <path d="M310.2 537.6 C374.7 527.2 433.0 537.6 474.6 564.6 M310.2 600.0 C374.7 589.6 433.0 600.0 474.6 627.0 M310.2 662.4 C374.7 652.0 433.0 662.4 474.6 689.4" stroke="#434a1c" stroke-opacity=".18" stroke-width="10.4" fill="none" stroke-linecap="round"/>
+    <path d="M549.4 564.6 C591.0 537.6 649.3 527.2 713.8 537.6 M549.4 627.0 C591.0 600.0 649.3 589.6 713.8 600.0 M549.4 689.4 C591.0 662.4 649.3 652.0 713.8 662.4" stroke="#434a1c" stroke-opacity=".14" stroke-width="10.4" fill="none" stroke-linecap="round"/>
+    <path d="M395.5 325.4 L512.0 256.8 L628.5 325.4" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
+    <path d="M395.5 385.8 L512.0 317.1 L628.5 385.8" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     </svg>

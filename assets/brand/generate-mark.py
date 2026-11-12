@@ -1,5 +1,5 @@
 # Generates the Service Dictionary logo mark in a few lockups.
-GREEN_TOP = '#356b51'; GREEN_BOT = '#16332a'; BRASS = '#d4ad5c'; BRASS_DEEP = '#b48a3a'; CREAM = '#fbf6ea'
+GREEN_TOP = '#4b5320'; GREEN_BOT = '#434a1c'; BRASS = '#c9ab6e'; BRASS_DEEP = '#c9ab6e'; CREAM = '#efe8d4'
 
 def emblem(cx=512, cy=540, s=1.0):
     """Open book with a rank chevron above it. Drawn on a 1024 grid centred at (cx, cy)."""
@@ -14,28 +14,28 @@ def emblem(cx=512, cy=540, s=1.0):
     <path d="M{B(512,478)} L{B(512,728)}" stroke="{GREEN_BOT}" stroke-opacity=".35" stroke-width="{6*s:.1f}" stroke-linecap="round"/>
     <path d="M{B(318,500)} C{B(380,490)} {B(436,500)} {B(476,526)} M{B(318,560)} C{B(380,550)} {B(436,560)} {B(476,586)} M{B(318,620)} C{B(380,610)} {B(436,620)} {B(476,646)}" stroke="{GREEN_BOT}" stroke-opacity=".18" stroke-width="{10*s:.1f}" fill="none" stroke-linecap="round"/>
     <path d="M{B(548,526)} C{B(588,500)} {B(644,490)} {B(706,500)} M{B(548,586)} C{B(588,560)} {B(644,550)} {B(706,560)} M{B(548,646)} C{B(588,620)} {B(644,610)} {B(706,620)}" stroke="{GREEN_BOT}" stroke-opacity=".14" stroke-width="{10*s:.1f}" fill="none" stroke-linecap="round"/>
-    <path d="M{P(400,326)} L{P(512,260)} L{P(624,326)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M{P(400,384)} L{P(512,318)} L{P(624,384)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M{P(400,326)} L{P(512,260)} L{P(624,326)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
+    <path d="M{P(400,384)} L{P(512,318)} L{P(624,384)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     '''
     return book
 
 DEFS = f'''<defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{GREEN_TOP}"/><stop offset="1" stop-color="{GREEN_BOT}"/></linearGradient>
   <radialGradient id="glow" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".10"/><stop offset=".6" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-  <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c97e"/><stop offset="1" stop-color="{BRASS_DEEP}"/></linearGradient>
+  <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c9ab6e"/><stop offset="1" stop-color="{BRASS_DEEP}"/></linearGradient>
 </defs>'''
 
 def svg(body, w=1024, h=1024):
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">{DEFS}{body}</svg>'
 
 # 1. Full icon (square, store/iOS masks the corners itself)
-icon = svg(f'<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#glow)"/>{emblem(512, 548, 1.04)}')
+icon = svg(f'<rect width="1024" height="1024" fill="url(#bg)"/>{emblem(512, 548, 1.04)}')
 # 2. Android adaptive foreground: emblem inside the 66% safe zone
 fg = svg(emblem(512, 538, 0.70))
 # 3. Android adaptive background
-bgl = svg('<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#glow)"/>')
+bgl = svg('<rect width="1024" height="1024" fill="url(#bg)"/>')
 # 4. Rounded badge for in-app header / favicon
-badge = svg(f'<rect width="1024" height="1024" rx="232" fill="url(#bg)"/><rect width="1024" height="1024" rx="232" fill="url(#glow)"/>{emblem(512, 548, 1.04)}')
+badge = svg(f'<rect width="1024" height="1024" rx="150" fill="url(#bg)"/>{emblem(512, 548, 1.04)}')
 for name, s in [('icon', icon), ('fg', fg), ('bg', bgl), ('badge', badge)]:
     open(f'{name}.svg', 'w').write(s)
 print('ok')

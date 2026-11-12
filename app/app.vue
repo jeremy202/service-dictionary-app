@@ -11,9 +11,9 @@ const payments = usePayments()
 /* ---------- Premium / payment page ---------- */
 const paywall = ref<null | 'launch' | 'limit' | 'menu'>(null)
 const premiumPill = computed(() => {
-  if (access.hasPlan.value) return { text: 'Premium', cls: 'bg-brass/15 text-brass ring-1 ring-brass/30' }
-  if (access.inTrial.value) return { text: `${access.trialDaysLeft.value}d trial`, cls: 'bg-accent-soft text-accent' }
-  return { text: 'Premium', cls: 'bg-brass text-[#1b211e]' }
+  if (access.hasPlan.value) return { text: 'Premium', cls: 'border border-brass/60 text-brass' }
+  if (access.inTrial.value) return { text: `${access.trialDaysLeft.value}d trial`, cls: 'border border-accent/40 bg-accent-soft text-accent' }
+  return { text: 'Premium', cls: 'bg-brass text-on-brass' }
 })
 function onPaymentResult(r: { ok: boolean; error?: string }) {
   if (r.ok) { paywall.value = null; tap('medium'); notify('Payment successful. Premium unlocked') }
@@ -206,7 +206,7 @@ onBeforeUnmount(() => observer?.disconnect())
       <div class="px-4 pt-2.5 pb-3">
         <div class="flex h-10 items-center gap-2.5">
           <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none">
-          <h1 class="m-0 truncate font-serif font-semibold tracking-tight" :class="view === 'browse' ? 'text-[20px]' : 'text-[22px]'">{{ title }}</h1>
+          <h1 class="m-0 truncate font-serif font-bold tracking-[.06em] uppercase" :class="view === 'browse' ? 'text-[21px]' : 'text-[23px]'">{{ title }}</h1>
           <span class="flex-1" />
           <button
             v-if="view === 'recent' && library.recent.value.length"
@@ -217,7 +217,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <button
             v-if="view === 'browse'"
             type="button"
-            class="flex h-7.5 flex-none cursor-pointer items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold whitespace-nowrap transition active:scale-95"
+            class="flex h-7.5 flex-none cursor-pointer items-center gap-1 rounded-sm px-2.5 font-serif text-[13.5px] font-semibold tracking-[.06em] whitespace-nowrap uppercase transition active:scale-95"
             :class="premiumPill.cls"
             @click="paywall = 'menu'"
           >
@@ -261,7 +261,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <div v-if="view === 'browse'" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
             <button
               v-for="f in FILTERS" :key="f.id" type="button"
-              class="flex h-8 flex-none cursor-pointer items-center rounded-full border px-4 text-[13.5px] font-medium whitespace-nowrap transition-colors"
+              class="flex h-8 flex-none cursor-pointer items-center rounded-sm border px-3.5 font-serif text-[15px] font-semibold tracking-[.05em] whitespace-nowrap uppercase transition-colors"
               :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
               @click="setFilter(f.id)"
             >
@@ -269,7 +269,7 @@ onBeforeUnmount(() => observer?.disconnect())
             </button>
             <button
               v-if="tab === 'a'" type="button"
-              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-line px-3 text-[13px] font-medium whitespace-nowrap text-ink/75 active:bg-line/50"
+              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-sm border border-dashed border-line px-3 text-[13px] font-medium whitespace-nowrap text-ink/75 active:bg-line/50"
               @click="abbrSort = abbrSort === 'full' ? 'abbr' : 'full'"
             >
               <AppIcon name="sort" :size="14" />
@@ -287,7 +287,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <button
             v-if="!access.unlimited.value"
             type="button"
-            class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 bg-brass/10 px-4 py-2.5 text-left"
+            class="flex w-full cursor-pointer items-center gap-3 border-b border-brass/30 bg-brass/10 px-4 py-2.5 text-left"
             @click="paywall = 'menu'"
           >
             <span class="min-w-0 flex-1 text-[13px] leading-snug text-ink/80">
@@ -301,11 +301,11 @@ onBeforeUnmount(() => observer?.disconnect())
             icon="search" title="No matches"
             :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} match, but ${fmt(matchCounts.all)} other entries do.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
           >
-            <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-full bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
+            <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-sm bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
             <div v-else-if="suggestions.length" class="mt-3 flex flex-wrap justify-center gap-2">
               <button
                 v-for="sg in suggestions" :key="sg" type="button"
-                class="cursor-pointer rounded-full border border-accent/40 bg-paper px-4 py-1.5 text-[15px] font-medium text-accent active:bg-accent-soft"
+                class="cursor-pointer rounded-sm border border-accent/40 bg-paper px-4 py-1.5 text-[15px] font-medium text-accent active:bg-accent-soft"
                 @click="useSuggestion(sg)"
               >{{ sg }}</button>
             </div>
@@ -313,7 +313,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <template v-for="row in rows" :key="row.key">
             <template v-if="row.type === 'letter'">
               <div :id="`sec-${row.letter}`" />
-              <div class="sticky top-0 z-[1] border-b border-line/60 bg-canvas/95 px-4 py-1 font-serif text-[15px] font-semibold text-accent backdrop-blur">
+              <div class="sticky top-0 z-[1] border-b border-line/60 bg-canvas/95 px-4 py-1 font-serif text-[16px] font-bold tracking-[.12em] text-accent backdrop-blur">
                 {{ row.letter }}
               </div>
             </template>
@@ -397,7 +397,7 @@ onBeforeUnmount(() => observer?.disconnect())
     <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2" enter-active-class="transition duration-200" leave-active-class="transition duration-200">
       <div
         v-if="toast"
-        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13.5px] font-medium text-canvas shadow-lift"
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-sm bg-ink px-4 py-2 text-[13.5px] font-medium text-canvas shadow-lift"
       >
         <AppIcon name="check" :size="15" />{{ toast }}
       </div>

@@ -29,12 +29,12 @@ const subtitle = computed(() => {
 })
 
 const TAG = {
-  t: { label: 'Term', cls: 'text-term bg-term-soft' },
-  a: { label: 'Abbr', cls: 'text-abbr bg-abbr-soft' },
-  p: { label: 'Proword', cls: 'text-pro bg-pro-soft' },
+  t: { label: 'Term', cls: 'text-term border-term/45' },
+  a: { label: 'Abbr', cls: 'text-abbr border-abbr/45' },
+  p: { label: 'Proword', cls: 'text-pro border-pro/45' },
 }
 const titleCls = {
-  t: 'font-serif text-[17.5px] font-semibold tracking-tight',
+  t: 'font-serif text-[19.5px] font-semibold',
   a: 'font-mono text-[15.5px] font-semibold text-abbr',
   p: 'font-mono text-[14.5px] font-semibold tracking-wide text-pro',
 }
@@ -59,7 +59,7 @@ const titleCls = {
         <span class="min-w-0 truncate leading-snug" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
         <span
           v-if="showKind"
-          class="flex-none rounded-[5px] px-1.5 py-px text-[9.5px] font-bold tracking-wider uppercase"
+          class="flex-none rounded-[2px] border px-1 py-px font-mono text-[9px] leading-none font-semibold tracking-[.08em] uppercase"
           :class="TAG[entry.kind].cls"
         >{{ TAG[entry.kind].label }}</span>
       </span>
