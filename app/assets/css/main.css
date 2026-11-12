@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 /* Fonts are bundled with the app so it works fully offline.
-   Source Serif 4: headwords and titles. Source Sans 3: everything else. */
-@import "@fontsource/source-serif-4/400.css";
-@import "@fontsource/source-serif-4/600.css";
-@import "@fontsource/source-sans-3/400.css";
-@import "@fontsource/source-sans-3/500.css";
-@import "@fontsource/source-sans-3/600.css";
-@import "@fontsource/source-sans-3/700.css";
+   IBM Plex Serif: headwords and titles. IBM Plex Sans: everything else. */
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/600.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
 
 @theme {
-  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Source Serif 4", Georgia, serif;
-  --font-mono: "Source Sans 3", ui-sans-serif, system-ui, sans-serif; /* abbreviations use the text face */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-mono: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; /* abbreviations use the text face */
 
   --radius-xs: 2px;
   --radius-sm: 4px;
@@ -100,7 +100,7 @@
   html, body { height: 100%; overscroll-behavior: none; }
   body {
     @apply bg-canvas text-ink font-sans antialiased;
-    font-size: 16px;
+    font-size: 15.5px;
     line-height: 1.6;
     overflow: hidden; /* the app scrolls inside its own list, like a native app */
   }

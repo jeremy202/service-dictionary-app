@@ -14,7 +14,7 @@ def splash(bg, ink, sub, badge, out):
     if badge: b=b.replace('fill="#1b1b1b"','fill="'+badge[0]+'"').replace('fill="#f5f2ea"','fill="'+badge[1]+'"')
     html=FONTS+f'''<body style="width:2732px;height:2732px;background:{bg};display:flex;flex-direction:column;align-items:center;justify-content:center">
     <div>{b}</div>
-    <div style="font-family:F;font-weight:600;font-size:112px;color:{ink};margin-top:64px">Service Dictionary</div>
+    <div style="font-family:F;font-weight:600;font-size:104px;color:{ink};margin-top:64px">Service Dictionary</div>
     <div style="font-family:I;font-weight:500;font-size:34px;letter-spacing:2px;color:{sub};margin-top:22px">Terms · Abbreviations · Prowords</div>
     </body>'''
     render(html,out,2732,2732)
