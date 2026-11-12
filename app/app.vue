@@ -5,6 +5,20 @@ import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary
 
 const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
 const library = useLibrary()
+const access = useAccess()
+const payments = usePayments()
+
+/* ---------- Premium / payment page ---------- */
+const paywall = ref<null | 'limit' | 'menu'>(null)
+const premiumPill = computed(() => {
+  if (access.hasPlan.value) return { text: 'Premium', cls: 'bg-brass/15 text-brass ring-1 ring-brass/30' }
+  if (access.inTrial.value) return { text: `${access.trialDaysLeft.value}d trial`, cls: 'bg-accent-soft text-accent' }
+  return { text: 'Premium', cls: 'bg-brass text-[#1b211e]' }
+})
+function onPaymentResult(r: { ok: boolean; error?: string }) {
+  if (r.ok) { paywall.value = null; tap('medium'); notify('Payment successful. Premium unlocked') }
+  else if (r.error) notify(r.error)
+}
 
 type View = 'browse' | 'saved' | 'recent'
 const view = ref<View>('browse')
@@ -113,6 +127,8 @@ const stack = ref<Entry[]>([])
 const current = computed(() => stack.value[stack.value.length - 1])
 function openEntry(e: Entry) {
   searchEl.value?.blur()
+  // After the free trial, without a plan: 10 entries a day
+  if (!access.useEntry()) { paywall.value = 'limit'; return }
   stack.value = [...stack.value, e]
   library.addRecent(e)
 }
@@ -163,12 +179,18 @@ onMounted(() => {
   // Android back button: close page → clear search → go to Dictionary → leave app
   if (Capacitor.isNativePlatform()) {
     CapApp.addListener('backButton', () => {
-      if (stack.value.length) closeEntry()
+      if (paywall.value) paywall.value = null
+      else if (stack.value.length) closeEntry()
       else if (input.value || searchFocused.value) cancelSearch()
       else if (view.value !== 'browse') setView('browse')
       else CapApp.minimizeApp()
     })
   }
+})
+onMounted(async () => {
+  payments.listen(onPaymentResult)
+  const r = await payments.checkPending() // a payment finished while the app was closed
+  if (r?.ok) onPaymentResult(r)
 })
 onBeforeUnmount(() => observer?.disconnect())
 </script>
@@ -180,7 +202,7 @@ onBeforeUnmount(() => observer?.disconnect())
       <div class="px-4 pt-2.5 pb-3">
         <div class="flex h-10 items-center gap-2.5">
           <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none">
-          <h1 class="m-0 truncate font-serif text-[22px] font-semibold tracking-tight">{{ title }}</h1>
+          <h1 class="m-0 truncate font-serif font-semibold tracking-tight" :class="view === 'browse' ? 'text-[20px]' : 'text-[22px]'">{{ title }}</h1>
           <span class="flex-1" />
           <button
             v-if="view === 'recent' && library.recent.value.length"
@@ -188,6 +210,16 @@ onBeforeUnmount(() => observer?.disconnect())
             @click="library.clearRecent(); notify('History cleared')"
           >Clear</button>
           <span v-if="view === 'saved' && library.saved.value.length" class="text-[13px] text-muted tabular-nums">{{ library.saved.value.length }}</span>
+          <button
+            v-if="view === 'browse'"
+            type="button"
+            class="flex h-7.5 flex-none cursor-pointer items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold whitespace-nowrap transition active:scale-95"
+            :class="premiumPill.cls"
+            @click="paywall = 'menu'"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 8.5 7.5 12 12 5l4.5 7L21 8.5 19 18H5L3 8.5Z" /></svg>
+            {{ premiumPill.text }}
+          </button>
         </div>
 
         <!-- Search (every tab) -->
@@ -248,6 +280,18 @@ onBeforeUnmount(() => observer?.disconnect())
       <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain">
         <!-- Dictionary -->
         <template v-if="view === 'browse'">
+          <button
+            v-if="!access.unlimited.value"
+            type="button"
+            class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 bg-brass/10 px-4 py-2.5 text-left"
+            @click="paywall = 'menu'"
+          >
+            <span class="min-w-0 flex-1 text-[13px] leading-snug text-ink/80">
+              <b class="font-semibold">{{ access.freeLeftToday.value }} free {{ access.freeLeftToday.value === 1 ? 'entry' : 'entries' }} left today.</b>
+              Unlimited from ₦250/month.
+            </span>
+            <span class="flex-none text-[13px] font-semibold text-brass">Upgrade</span>
+          </button>
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
@@ -340,11 +384,20 @@ onBeforeUnmount(() => observer?.disconnect())
       />
     </Transition>
 
+    <!-- ===== Payment page ===== -->
+    <Transition
+      enter-from-class="translate-y-full" leave-to-class="translate-y-full"
+      enter-active-class="transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+      leave-active-class="transition-transform duration-250 ease-in"
+    >
+      <Paywall v-if="paywall" :reason="paywall" @close="paywall = null" @notify="notify" />
+    </Transition>
+
     <!-- ===== Toast ===== -->
     <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2" enter-active-class="transition duration-200" leave-active-class="transition duration-200">
       <div
         v-if="toast"
-        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13.5px] font-medium text-canvas shadow-lift"
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13.5px] font-medium text-canvas shadow-lift"
       >
         <AppIcon name="check" :size="15" />{{ toast }}
       </div>
