@@ -21,8 +21,10 @@ export function useDictionary() {
 
   const words = computed(() => query.value.trim().toLowerCase().split(/\s+/).filter(Boolean))
 
+  // Abbreviations are filed under their abbreviation in "All" (matching the row title),
+  // and under the full form on the Abbreviations tab unless sorted by abbreviation.
   const sortKey = (e: Entry) =>
-    e.kind === 'a' && tab.value === 'a' && abbrSort.value === 'abbr' ? e.la : e.lh
+    e.kind === 'a' && (tab.value === 'all' || (tab.value === 'a' && abbrSort.value === 'abbr')) ? e.la : e.lh
 
   const letterOf = (e: Entry) => {
     const c = sortKey(e).replace(/^[^a-z0-9]+/, '')[0] ?? '#'
@@ -68,7 +70,9 @@ export function useDictionary() {
       for (const [r, e] of scored) ranks.set(e.id, r)
       return scored.map(([, e]) => e)
     }
-    let list = [...pool.value].sort((a, b) => collator.compare(sortKey(a), sortKey(b)))
+    // Entries starting with a number or symbol ("1st Lt", "2iC") go after Z
+    const numeric = (e: Entry) => (letterOf(e) === '#' ? 1 : 0)
+    let list = [...pool.value].sort((a, b) => numeric(a) - numeric(b) || collator.compare(sortKey(a), sortKey(b)))
     if (letter.value) list = list.filter(e => letterOf(e) === letter.value)
     return list
   })

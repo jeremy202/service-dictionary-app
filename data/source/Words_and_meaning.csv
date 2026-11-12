@@ -103,15 +103,15 @@ Anticipation.,"In operational art, anticipation is the key to effectiveplanning 
 Anti-Personnel Mine (APM).,"A mine primarily designed to be initiated by the presence, proximity or contact of a person."
 Appendix.,A supplementary document that amplifies an annex.
 Appointment Titles.,"Titles used to refer to officers in command and to other holders of service appointments. Although appointment titles have no security in themselves, they disguise the level at which the appointment is held, e.g., Sunray, meaning Commander at any level, other appointment titles are as follows:
-a.2 i/c- SUNRAY MINOR.
+a. 2 iC- SUNRAY MINOR.
 b.Adjutant- SEAGULL.
-c.Admin Staff- MAN HOLE.
+c. Admin Staff- MAN HOLE.
 d.Quarter Master- MOLAR.
-e.Armour Rep- IRONSIDE.
-f.Army Avn Rep- HAWK EYE.
+e. Armour Rep- IRONSIDE.
+f. Army Avn Rep- HAWK EYE.
 g.Arty Rep- SHELDRAKE.
 h.COAS- MOON BEAM.
-I.Commander- SUNRAY.
+I. Commander- SUNRAY.
 j.Engr Rep- HOLD FAST.
 k.EME Rep- BLUE BELL.
 l.Grd Liaison offr- GLOW WARM.
@@ -672,10 +672,12 @@ Key Terrain.,"A key terrain is any feature or area which the seizure or control 
 Killing Area (KA).,"An area in which a commander plans to force the enemy to concentrate, so as to destroy him with conventional or tactical nuclearweapons. The area or zones where nuclear weapons are primarily planned to be used are termed nuclear killing zones (NKZ)."
 Knoll,A knoll is a low detached hill.
 L-Hour.,"a.The time when troops cross the start line for phase 2 in a phased attack. L-Hour is therefore to be associated with attacks that are of more than one phase.b.In amphibious and airmobile operations, L Hour is the time at which the first helicopter of a heliborne assault wave touches down inthe landing zone."
-Land Force Elements.,"A land force consists of combat, combat support,combat service support and command support elements. The proportion of each will vary between campaigns and operations."
-a.Combat Element.,"Combat elements are those elements thatengage the enemy directly; they fight, typically employing direct-fire weapons. They include infantry, armoured and some aviation units."
-c.Combat Service Support.,"Combat Service Support is 'the support provided to combat forces primarily in the fields of administration and logistics'. These force elements include logistic,medical and equipment support; personnel welfare; and administration. Others are force support engineers, they provide water and electrical power supply, construct infrastructure andmaintain supply routes."
-d.Command Support Element.,"Command Support elementsassist commanders in the exercise of command. They include staff of all types; communications, intelligence and information systems; andlife support elements to protect, sustain and move the commanderand his staff."
+Land Force Elements.,"A land force consists of combat, combat support,combat service support and command support elements. The proportion of each will vary between campaigns and operations.
+a. Combat Element. Combat elements are those elements thatengage the enemy directly; they fight, typically employing direct-fire weapons. They include infantry, armoured and some aviation units.
+ b. Combat Support Element. Combat Support is 'fire support and operational assistance provided to combat elements' Combat Support elements include: Arty fire support, air defence, reconnaissance, combat engineer, some aviation and some electronic warfare elements.
+c. Combat Service Support. Combat Service Support is 'the support provided to combat forces primarily in the fields of administration and logistics'. These force elements include logistic,medical and equipment support; personnel welfare; and administration. Others are force support engineers, they provide water and electrical power supply, construct infrastructure andmaintain supply routes.
+
+d. Command Support Element. Command Support elements assist commanders in the exercise of command. They include staff of all types; communications, intelligence and information systems; andlife support elements to protect, sustain and move the commanderand his staff."
 Landing Craft.,"Seagoing craft which falls under the category ofamphibious shipping, designed to carry and land forces and their equipmentwith or without the use of aport."
 Landing Point.,A point within a landing site where one helicopter canland.
 Landing Site.,"A site within a landing zone containing one or morelanding points. In amphibious operations,landing siteis a continuous segment of coastline over which troops, equipment and supplies can belanded by surface means."

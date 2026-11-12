@@ -122,7 +122,7 @@ export function formatMeaning(meaning: string): Block[] {
     const markers = findMarkers(para)
     if (!markers.length) {
       // a paragraph that is itself one list item, e.g. "a.Vanguard. That part…"
-      const single = para.match(/^([a-z])\.\s*(?=[A-Z])|^\((\d{1,2})\)\s*/)
+      const single = para.match(/^([a-z])\.\s*(?=[A-Z0-9(])|^\((\d{1,2})\)\s*/)
       if (single && blocks.length) {
         const isAlpha = !!single[1]
         if (isAlpha) sawAlpha = true

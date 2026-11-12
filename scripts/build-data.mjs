@@ -34,9 +34,10 @@ function parseCsv(text) {
 const read = f => parseCsv(readFileSync(join(root, 'data/source', f), 'utf8'))
 
 // The abbreviations file repeats many pairs, word for word ("Commanding Officer, CO" three times)
-// or with only capitals/spacing changed ("Armoured personnel carrier, APC", "AV GAS" / "AVGAS").
+// or with only capitals/spacing/hyphens changed ("Armoured personnel carrier, APC", "AV GAS" / "AVGAS",
+// "Second in Command, 2iC" / "Second-in-Command, 2IC").
 // Keep the first occurrence of each pair. Abbreviations with different meanings are all kept.
-const normMeaning = s => s.replace(/\s+/g, ' ').trim().replace(/\.$/, '').toLowerCase()
+const normMeaning = s => s.replace(/[-\u2010-\u2013]/g, ' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '').toLowerCase()
 const normAbbr = s => s.replace(/\s+/g, '').replace(/\.$/, '').toLowerCase()
 function dedupeAbbreviations(rows) {
   const seen = new Set()

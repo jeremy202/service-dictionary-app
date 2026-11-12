@@ -252,7 +252,7 @@ onBeforeUnmount(() => observer?.disconnect())
               <span class="pr-1 text-[12px] text-muted tabular-nums">{{ fmt(row.count) }}</span>
             </div>
             <EntryRow
-              v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'"
+              v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'" :compact="tab === 'a'"
               :saved="library.isSaved(row.entry)" @open="openEntry"
             />
           </template>

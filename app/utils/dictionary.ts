@@ -58,7 +58,7 @@ export const TABS: { id: Tab; label: string; slug: string }[] = [
 
 export const KIND_LABEL: Record<Kind, string> = { t: 'Term', a: 'Abbreviation', p: 'Proword' }
 
-export const ALPHABET = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
+export const ALPHABET = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#']
 
 const escMap: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => escMap[c]!)
