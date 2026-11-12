@@ -14,7 +14,7 @@ function pick(l: string) {
 
 <template>
   <nav
-    class="mt-3 grid grid-cols-9 gap-0.5 transition-opacity duration-300 sm:flex sm:justify-between"
+    class="-mx-5 mt-3 flex gap-0.5 overflow-x-auto px-5 transition-opacity duration-300 [scrollbar-width:none] sm:mx-0 sm:justify-between sm:px-0 [&::-webkit-scrollbar]:hidden"
     :class="disabled ? 'pointer-events-none opacity-35' : ''"
     aria-label="Browse by letter"
   >
@@ -23,7 +23,7 @@ function pick(l: string) {
       :key="l"
       type="button"
       :disabled="disabled || !available.has(l)"
-      class="grid h-7 min-w-6.5 cursor-pointer place-items-center rounded-lg text-[12.5px] font-semibold transition-all disabled:cursor-default disabled:bg-transparent disabled:text-faint"
+      class="grid h-8 min-w-8 flex-none cursor-pointer sm:h-7 sm:min-w-6.5 place-items-center rounded-lg text-[12.5px] font-semibold transition-all disabled:cursor-default disabled:bg-transparent disabled:text-faint"
       :class="model === l ? 'bg-accent text-paper shadow-sm' : 'text-ink/80 hover:bg-accent-soft hover:text-accent'"
       :aria-pressed="model === l"
       @click="pick(l)"
