@@ -1,32 +1,26 @@
 @import "tailwindcss";
 
 /* Fonts are bundled with the app so it works fully offline.
-   Barlow Condensed: titles and headwords (DIN-style military signage lettering)
-   Barlow: meanings and interface text
-   IBM Plex Mono: abbreviations, prowords and list markers (typewritten signals feel) */
-@import "@fontsource/barlow/400.css";
-@import "@fontsource/barlow/500.css";
-@import "@fontsource/barlow/600.css";
-@import "@fontsource/barlow/700.css";
-@import "@fontsource/barlow-condensed/500.css";
-@import "@fontsource/barlow-condensed/600.css";
-@import "@fontsource/barlow-condensed/700.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/600.css";
+   Source Serif 4: headwords and titles. Source Sans 3: everything else. */
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-sans-3/400.css";
+@import "@fontsource/source-sans-3/500.css";
+@import "@fontsource/source-sans-3/600.css";
+@import "@fontsource/source-sans-3/700.css";
 
 @theme {
-  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Barlow Condensed", "Barlow", ui-sans-serif, sans-serif; /* display face */
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --font-mono: "Source Sans 3", ui-sans-serif, system-ui, sans-serif; /* abbreviations use the text face */
 
-  /* Squarer corners throughout (field-manual feel); rounded-full stays round */
-  --radius-xs: 1px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 4px;
-  --radius-2xl: 5px;
-  --radius-3xl: 6px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-3xl: 12px;
 
   --color-canvas: var(--canvas);
   --color-paper: var(--paper);
@@ -49,58 +43,56 @@
   --color-pro: var(--pro);
   --color-pro-soft: var(--pro-soft);
 
-  /* Flat: hairline depth instead of soft floating shadows */
-  --shadow-card: 0 1px 0 rgb(40 38 20 / .06);
-  --shadow-lift: 0 1px 0 rgb(40 38 20 / .08), 0 2px 6px -2px rgb(40 38 20 / .14);
+  --shadow-card: none;
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / .06);
 }
 
+/* Black, grey and white on parchment, with one restrained accent (navy) */
 :root {
-  --canvas: #f5f2ea;       /* parchment (kept) */
-  --paper: #fbf9f3;
-  --ink: #1d2016;
-  --muted: #5f6253;
-  --faint: #b5b29f;
-  --line: #dcd6c4;
-  --accent: #4b5320;       /* olive drab */
-  --accent-deep: #343a16;
-  --accent-soft: #e6e5d0;
-  --highlight: #ece08c;    /* marker yellow */
-  --brass: #8a6a3a;        /* coyote tan */
-  --on-brass: #fbf9f3;
-  --danger: #8b2e1f;       /* signal red */
-  --danger-soft: #f3e1da;
-  --term: #4b5320;
-  --term-soft: #e6e5d0;
-  --abbr: #7a4a22;         /* rust brown */
-  --abbr-soft: #f0e4d2;
-  --pro: #34444c;          /* slate */
-  --pro-soft: #e1e5e4;
+  --canvas: #f5f2ea;
+  --paper: #fdfcf8;
+  --ink: #1b1b1b;
+  --muted: #6a6a66;
+  --faint: #b7b4ac;
+  --line: #e1ddd3;
+  --accent: #1f3a5c;
+  --accent-deep: #152a43;
+  --accent-soft: #e7ebf0;
+  --highlight: #f1e4a6;
+  --brass: #1b1b1b;
+  --on-brass: #fdfcf8;
+  --danger: #9b2c2c;
+  --danger-soft: #f6e4e1;
+  --term: #1b1b1b;
+  --term-soft: #ecebe6;
+  --abbr: #1f3a5c;
+  --abbr-soft: #e7ebf0;
+  --pro: #1b1b1b;
+  --pro-soft: #ecebe6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #14160f;
-    --paper: #1b1e15;
-    --ink: #e6e3d4;
-    --muted: #9b9a87;
-    --faint: #44463a;
-    --line: #2d3024;
-    --accent: #a4ae6c;
-    --accent-deep: #4b5320;
-    --accent-soft: #272b1b;
-    --highlight: #565019;
-    --brass: #c6a46c;
-    --on-brass: #14160f;
-    --danger: #e0907c;
-    --danger-soft: #35201a;
-    --term: #a4ae6c;
-    --term-soft: #272b1b;
-    --abbr: #d49b68;
-    --abbr-soft: #33261a;
-    --pro: #9fb2bb;
-    --pro-soft: #20292d;
-    --shadow-card: 0 1px 0 rgb(0 0 0 / .3);
-    --shadow-lift: 0 2px 8px -2px rgb(0 0 0 / .5);
+    --canvas: #161616;
+    --paper: #1e1e1e;
+    --ink: #ebebe8;
+    --muted: #9a9a95;
+    --faint: #4a4a47;
+    --line: #2d2d2b;
+    --accent: #a9bedb;
+    --accent-deep: #1f3a5c;
+    --accent-soft: #232a35;
+    --highlight: #4d4520;
+    --brass: #ebebe8;
+    --on-brass: #161616;
+    --danger: #e59a91;
+    --danger-soft: #3a2321;
+    --term: #ebebe8;
+    --term-soft: #262626;
+    --abbr: #a9bedb;
+    --abbr-soft: #232a35;
+    --pro: #ebebe8;
+    --pro-soft: #262626;
   }
 }
 
@@ -109,11 +101,11 @@
   body {
     @apply bg-canvas text-ink font-sans antialiased;
     font-size: 16px;
-    line-height: 1.55;
+    line-height: 1.6;
     overflow: hidden; /* the app scrolls inside its own list, like a native app */
   }
   ::selection { background: var(--highlight); }
-  mark { @apply bg-highlight text-inherit rounded-[1px] px-px; }
+  mark { @apply bg-highlight text-inherit rounded-[2px] px-px; }
   input[type="search"]::-webkit-search-cancel-button { appearance: none; }
   html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
   button, nav, kbd { -webkit-user-select: none; user-select: none; }

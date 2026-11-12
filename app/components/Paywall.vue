@@ -110,7 +110,7 @@ async function restore() {
     <div class="sheet-backdrop absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="emit('close')" />
 
     <!-- Sheet -->
-    <div class="sheet relative flex max-h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[10px] border-t-4 border-accent bg-canvas shadow-2xl sm:rounded-[10px]">
+    <div class="sheet relative flex max-h-[94dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[14px] bg-canvas shadow-2xl sm:rounded-[14px]">
       <!-- Handle + close -->
       <div class="relative flex-none pt-2.5">
         <div class="mx-auto h-1.5 w-10 rounded-full bg-line" />
@@ -122,10 +122,10 @@ async function restore() {
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
         <!-- Header -->
         <div class="flex items-center gap-3.5 pt-3 pr-8">
-          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none">
+          <img src="/logo.svg" alt="" width="52" height="52" class="size-13 flex-none dark:invert">
           <div class="min-w-0">
-            <span class="font-mono text-[10px] font-semibold tracking-[.14em] text-brass uppercase">Service Dictionary Premium</span>
-            <h2 class="m-0 font-serif text-[25px] leading-tight font-bold tracking-[.02em] uppercase">{{ headline }}</h2>
+            <span class="text-[11.5px] font-semibold tracking-[.06em] text-muted uppercase">Premium</span>
+            <h2 class="m-0 font-serif text-[24px] leading-tight font-semibold">{{ headline }}</h2>
           </div>
         </div>
         <p class="mt-2.5 mb-0 text-[14px] leading-relaxed text-muted">{{ subline }}</p>
@@ -133,7 +133,7 @@ async function restore() {
         <!-- Trial progress -->
         <div v-if="access.inTrial.value && !premium && !pending && mode === 'buy'" class="mt-3">
           <div class="h-1.5 overflow-hidden rounded-full bg-line">
-            <div class="h-full rounded-full bg-accent" :style="{ width: `${Math.max(4, Math.round(((TRIAL_DAYS - access.trialDaysLeft.value) / TRIAL_DAYS) * 100))}%` }" />
+            <div class="h-full rounded-full bg-ink/70" :style="{ width: `${Math.max(4, Math.round(((TRIAL_DAYS - access.trialDaysLeft.value) / TRIAL_DAYS) * 100))}%` }" />
           </div>
           <div class="mt-1 flex justify-between text-[11.5px] text-muted">
             <span>Free trial</span><span>{{ plural(access.trialDaysLeft.value, 'day') }} left</span>
@@ -151,7 +151,7 @@ async function restore() {
         <!-- Benefits -->
         <ul v-if="showPlans" class="mt-4 mb-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0">
           <li v-for="b in BENEFITS" :key="b" class="flex gap-2 text-[13px] leading-snug">
-            <span class="mt-px grid size-4.5 flex-none place-items-center rounded-full bg-accent text-paper"><AppIcon name="check" :size="11" /></span>
+            <span class="mt-0.5 flex-none text-muted"><AppIcon name="check" :size="15" /></span>
             <span>{{ b }}</span>
           </li>
         </ul>
@@ -169,14 +169,14 @@ async function restore() {
               :class="selected === p.id ? 'border-accent bg-accent text-paper' : 'border-faint'"
             ><AppIcon v-if="selected === p.id" name="check" :size="12" /></span>
             <span class="min-w-0 flex-1">
-              <span class="block font-serif text-[17px] font-semibold tracking-[.04em] uppercase">{{ p.name }}</span>
+              <span class="block text-[16px] font-semibold">{{ p.name }}</span>
               <span class="block text-[12.5px] text-muted">{{ p.note }}</span>
             </span>
             <span class="text-right">
-              <span class="block font-serif text-[24px] leading-none font-bold">{{ naira(p.price) }}</span>
+              <span class="block font-serif text-[22px] leading-none font-semibold">{{ naira(p.price) }}</span>
               <span class="mt-1 block text-[11.5px] text-muted">{{ p.period }}</span>
             </span>
-            <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-sm bg-brass px-2 py-0.5 font-mono text-[9.5px] font-semibold tracking-[.1em] text-on-brass uppercase">{{ p.badge }}</span>
+            <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-sm bg-ink px-2 py-0.5 text-[10.5px] font-semibold tracking-[.04em] text-paper">{{ p.badge }}</span>
           </button>
         </div>
 

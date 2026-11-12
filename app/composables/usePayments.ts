@@ -100,7 +100,7 @@ export function usePayments() {
     try {
       const r = await call('/api/pay', { method: 'POST', body: JSON.stringify({ plan, email }) })
       setPending(r.reference)
-      if (Capacitor.isNativePlatform()) await Browser.open({ url: r.url, presentationStyle: 'popover', toolbarColor: '#343a16' })
+      if (Capacitor.isNativePlatform()) await Browser.open({ url: r.url, presentationStyle: 'popover', toolbarColor: '#1b1b1b' })
       else window.open(r.url, '_blank')
       return {}
     } catch (e: any) {

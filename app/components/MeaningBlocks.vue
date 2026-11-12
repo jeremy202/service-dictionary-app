@@ -17,9 +17,9 @@ const w = computed(() => props.words ?? [])
       <div v-else class="flex gap-3" :class="b.level === 2 ? 'mt-2 ml-9' : 'mt-4 first:mt-0'">
         <span
           v-if="b.level === 1"
-          class="mt-0.5 grid h-6 min-w-6 flex-none place-items-center rounded-[2px] border border-accent/40 bg-accent-soft px-1 font-mono text-[12px] font-semibold text-accent"
+          class="w-6 flex-none pt-px text-right text-[15px] font-semibold text-ink/55 tabular-nums"
         >{{ b.marker }}</span>
-        <span v-else class="w-7 flex-none pt-px text-right font-mono text-[12.5px] font-medium text-muted">{{ b.marker }}</span>
+        <span v-else class="w-7 flex-none pt-px text-right text-[14px] text-muted tabular-nums">{{ b.marker }}</span>
         <div class="min-w-0 flex-1">
           <strong v-if="b.title" class="block font-semibold text-ink" v-html="highlight(b.title, w)" />
           <span v-html="highlight(b.text, w)" />

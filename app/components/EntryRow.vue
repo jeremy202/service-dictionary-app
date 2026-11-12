@@ -29,14 +29,14 @@ const subtitle = computed(() => {
 })
 
 const TAG = {
-  t: { label: 'Term', cls: 'text-term border-term/45' },
-  a: { label: 'Abbr', cls: 'text-abbr border-abbr/45' },
-  p: { label: 'Proword', cls: 'text-pro border-pro/45' },
+  t: { label: 'Term', cls: '' },
+  a: { label: 'Abbreviation', cls: '' },
+  p: { label: 'Proword', cls: '' },
 }
 const titleCls = {
-  t: 'font-serif text-[19.5px] font-semibold',
-  a: 'font-mono text-[15.5px] font-semibold text-abbr',
-  p: 'font-mono text-[14.5px] font-semibold tracking-wide text-pro',
+  t: 'font-serif text-[18px] font-semibold',
+  a: 'text-[16px] font-semibold text-abbr',
+  p: 'text-[15px] font-semibold tracking-[.03em]',
 }
 </script>
 
@@ -49,7 +49,7 @@ const titleCls = {
   >
     <!-- Abbreviations tab: abbreviation | full form -->
     <template v-if="compact && entry.kind === 'a'">
-      <span class="w-[5.75rem] flex-none truncate font-mono text-[14.5px] font-semibold text-abbr" v-html="highlight(entry.abbr ?? '', words)" />
+      <span class="w-[5.75rem] flex-none truncate text-[15.5px] font-semibold text-abbr" v-html="highlight(entry.abbr ?? '', words)" />
       <span class="line-clamp-2 min-w-0 flex-1 text-[15.5px] leading-snug" v-html="highlight(entry.meaning, words)" />
     </template>
 
@@ -59,7 +59,7 @@ const titleCls = {
         <span class="min-w-0 truncate leading-snug" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
         <span
           v-if="showKind"
-          class="flex-none rounded-[2px] border px-1 py-px font-mono text-[9px] leading-none font-semibold tracking-[.08em] uppercase"
+          class="flex-none text-[12px] text-muted"
           :class="TAG[entry.kind].cls"
         >{{ TAG[entry.kind].label }}</span>
       </span>

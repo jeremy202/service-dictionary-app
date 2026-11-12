@@ -10,7 +10,7 @@ export default defineNuxtPlugin(() => {
       await StatusBar.setStyle({ style: dark.matches ? Style.Dark : Style.Light })
       if (Capacitor.getPlatform() === 'android') {
         await StatusBar.setOverlaysWebView({ overlay: false })
-        await StatusBar.setBackgroundColor({ color: dark.matches ? '#14160f' : '#f5f2ea' })
+        await StatusBar.setBackgroundColor({ color: dark.matches ? '#161616' : '#f5f2ea' })
       }
     } catch {}
   }
