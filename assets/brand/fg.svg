@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f3a5c"/><stop offset="1" stop-color="#1f3a5c"/></linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2e5c45"/><stop offset="1" stop-color="#2e5c45"/></linearGradient>
   <radialGradient id="glow" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".10"/><stop offset=".6" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
   <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9d0b8"/><stop offset="1" stop-color="#d9d0b8"/></linearGradient>
 </defs>
     <path d="M512.0 510.0 C470.0 475.0 400.0 462.4 337.0 473.6 L337.0 662.6 C400.0 651.4 470.0 664.0 512.0 699.0 Z" fill="#f5f2ea"/>
     <path d="M512.0 510.0 C554.0 475.0 624.0 462.4 687.0 473.6 L687.0 662.6 C624.0 651.4 554.0 664.0 512.0 699.0 Z" fill="#f5f2ea" opacity=".88"/>
-    <path d="M512.0 515.6 L512.0 690.6" stroke="#1f3a5c" stroke-opacity=".35" stroke-width="4.2" stroke-linecap="round"/>
-    <path d="M376.2 531.0 C419.6 524.0 458.8 531.0 486.8 549.2 M376.2 573.0 C419.6 566.0 458.8 573.0 486.8 591.2 M376.2 615.0 C419.6 608.0 458.8 615.0 486.8 633.2" stroke="#1f3a5c" stroke-opacity=".18" stroke-width="7.0" fill="none" stroke-linecap="round"/>
-    <path d="M537.2 549.2 C565.2 531.0 604.4 524.0 647.8 531.0 M537.2 591.2 C565.2 573.0 604.4 566.0 647.8 573.0 M537.2 633.2 C565.2 615.0 604.4 608.0 647.8 615.0" stroke="#1f3a5c" stroke-opacity=".14" stroke-width="7.0" fill="none" stroke-linecap="round"/>
+    <path d="M512.0 515.6 L512.0 690.6" stroke="#2e5c45" stroke-opacity=".35" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M376.2 531.0 C419.6 524.0 458.8 531.0 486.8 549.2 M376.2 573.0 C419.6 566.0 458.8 573.0 486.8 591.2 M376.2 615.0 C419.6 608.0 458.8 615.0 486.8 633.2" stroke="#2e5c45" stroke-opacity=".18" stroke-width="7.0" fill="none" stroke-linecap="round"/>
+    <path d="M537.2 549.2 C565.2 531.0 604.4 524.0 647.8 531.0 M537.2 591.2 C565.2 573.0 604.4 566.0 647.8 573.0 M537.2 633.2 C565.2 615.0 604.4 608.0 647.8 615.0" stroke="#2e5c45" stroke-opacity=".14" stroke-width="7.0" fill="none" stroke-linecap="round"/>
     <path d="M433.6 388.2 L512.0 342.0 L590.4 388.2" stroke="url(#brass)" stroke-width="26.6" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     <path d="M433.6 428.8 L512.0 382.6 L590.4 428.8" stroke="url(#brass)" stroke-width="26.6" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     </svg>

@@ -1,5 +1,5 @@
 # Generates the Service Dictionary logo mark in a few lockups.
-GREEN_TOP = '#1f3a5c'; GREEN_BOT = '#1f3a5c'; BRASS = '#d9d0b8'; BRASS_DEEP = '#d9d0b8'; CREAM = '#f5f2ea'
+GREEN_TOP = '#2e5c45'; GREEN_BOT = '#2e5c45'; BRASS = '#d9d0b8'; BRASS_DEEP = '#d9d0b8'; CREAM = '#f5f2ea'
 
 def emblem(cx=512, cy=540, s=1.0):
     """Open book with a rank chevron above it. Drawn on a 1024 grid centred at (cx, cy)."""
