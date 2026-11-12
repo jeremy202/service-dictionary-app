@@ -1,0 +1,67 @@
+name: Build Android APK
+
+# Runs on every push to main, or manually from the Actions tab ("Run workflow").
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to publish the APK as a GitHub Release
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the web app
+        run: npm run generate
+
+      - name: Copy the web app into the Android project
+        run: npx cap sync android
+
+      - name: Build the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist-apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist-apk/ServiceDictionary-build-${{ github.run_number }}.apk"
+
+      - name: Keep the APK as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ServiceDictionary-android
+          path: dist-apk/*.apk
+
+      - name: Publish the APK on the Releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Service Dictionary (Android test build ${{ github.run_number }})
+          body: |
+            Android test build of Service Dictionary.
+
+            **To install on your Android phone:** download the `.apk` file below on the phone, open it, and allow installing from this source when asked.
+          files: dist-apk/*.apk
+          make_latest: true

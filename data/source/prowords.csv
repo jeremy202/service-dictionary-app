@@ -1,0 +1,92 @@
+PROWORD,Meaning
+ACKNOWLEDGE,Instruction to a station on the net to acknowledge that it has received a message which may or may not have been specifically addressed to it.
+ADDRESS GROUP,The group that follows is an address group consisting of 3 letters.
+ALL AFTER,"Used with reference to a catchword or phrase when requesting, or giving, repetitions or corrections."
+ALL BEFORE,"Used with reference to a catchword or phrase when requesting, or giving, repetitions or corrections."
+ALL STATIONS,A call for all stations on a net.
+AM ASSUMING CONTROL,Used when a substation takes over all the duties of control.
+AND,Used to separate certain stations in multi-station calls.
+ANSWER AFTER,Instructing a newly joined station in which order it is to answer calls.
+ASSUME CONTROL,Ordering a substation to assume control of the net.
+AUTHENTICATE,The station called is to reply to the challenge which follows.
+BREAK,Text begins or text ends.
+CALLSIGN,What follows is a callsign.
+CANCEL,Used when a sender wishes to cancel a message or a transmission.
+CHARLIE CHARLIE,A collective call to a pre-designated number of stations. The proword CHARLIE CHARLIE will be followed by a figure suffix indicating which collective call is in use.
+CHECK BACK,"Used by Control after giving a time signal, when he wishes a designated station to check the time back."
+CONTACT WAIT OUT,I have made contact and an exchange of fire has taken place. I shall make a formal contact report as soon as I can.
+CONTACT AT,Formal contact report follows.
+CORRECT,You are correct.
+DIFFICULT,Communication is workable only with difficulty. Care and extra measures are needed.
+DIRECTION,"Followed by grid bearing from observer to target, when using artillery target indication procedure."
+DISTORTED,Incoming signals are distorted.
+EXEMPT,The callsigns which follow are excluded from a collective or all stations call.
+FETCH,"Used, in conjunction with appointment title/callsign, to indicate to whom the caller wishes to speak."
+FIGURES,"Used before groups of figures sent digit by digit, except in the case of call-signs, grid references, time checks, authentication and date time groups."
+FORMAL MESSAGE,Offer of a formal message. (Must be qualified by the „Precedence? and may be qualified by „Long?).
+FROM,Used by a relaying station to indicate the station originating the message.
+FROM … TO …,Used to identify part of a message.
+GIVE ME A CALLSIGN,Request for a callsign by a station joining a net which is already functioning.
+GRID,Used before any encoded reference or grid reference in clear.
+HEIGHT,Used before any height in code or in clear.
+HELLO,Used as an introduction in an initial call.
+I AUTHENTICATE,The group that follows is the reply to your challenge to authenticate.
+I READ BACK,"Used by receiving station to satisfy himself he has received a transmission, or portion of it, correctly."
+I SAY AGAIN,Used by a sender when making repetitions for emphasis.
+I SPELL,Used when spelling out a word or letter group.
+INFO,The addressees (callsigns) immediately following are addressed for information purposes.
+INTERFERENCE,Used to indicate interferences when reporting readability of signals.
+INTERMITTENT,Used to indicate intermittent reception when reporting readability of signals.
+LONG MESSAGE,Offer a long unregistered message (one which will take more than 20 seconds to send).
+MESSAGE,Offer of an unregistered message that needs to be written down.
+NET NOW,"Order to a station, or stations, to start netting."
+NICK,The following is a nicknumber.
+NO PLAY,"Used to distinguish real from exercise messages, eg accidents, casualties, public relations. “NO PLAY” is to be the first and last words of the text of the message."
+NOTHING HEARD,Indication that no signals have been received from a particular station.
+OK,Communications satisfactory for working.
+ORDERS,Offer of orders; indicates that a responsible person must be fetched to the set.
+OUT,This is the end of my transmission. No reply is expected.
+OUT TO YOU,This is the end of my transmission to you.
+OVER,"This is the end of my transmission to you, a reply or acknowledgement is required, go ahead and transmit."
+OVERHEAD,Indication by a ground station to a pilot when overhead.
+RADIO CHECK,Report how you receive my transmission.
+READ BACK,Order to a station to repeat back a message exactly as received.
+READ BACK MESSAGE,Warning that station(s) must record the message offered and that one will be nominated to read it back.
+REBROADCAST CALLSIGN(S),Control orders a technical rebroadcast station to rebroadcast the callsigns named.
+REBROADCAST YOUR NET,The senior Control orders a sub-unit to arrange tactical rebroadcast between their two nets.
+RELAY THROUGH,Instruction to a station to relay through another.
+RELAY TO,Instruction to a station to relay a message.
+REQUEST HOMING,Request from pilot to ground station for a homing signal.
+REQUEST OVERHEAD,Request to a ground station from a pilot to be informed when overhead.
+RETUNE,Order by Control to a substation to improve his communications by retuning his set.
+ROGER,I have received your last transmission satisfactorily.
+ROGER SO FAR,Acknowledge receipt of what has been sent so far.
+SAY AGAIN,"Request for repetition of all, or portions indicated, of a message."
+SEEN,Pilot informs ground station that he has identified a visual homing landmark.
+SEND,You have permission to transmit your message.
+SEND KEY SETTING,Send the next available BATCO setting.
+SEND TIME,Request for an exact (accurate on the minute) time signal.
+SERIAL,Used to introduce serials.
+SIGHTING,I have seen the enemy but no exchange of fire has taken place (locations must be encoded).
+SIGNAL STRENGTHS,Call by Control for substations to report how they hear each other.
+SIT REP as at,Informal battle situation report follows.
+SPEAKING,"Used, in conjunction with appointment title/callsign, to indicate who is speaking."
+STOP REBROADCAST,Originator orders a rebroadcast station to stop rebroadcast.
+SUBJECT INDICATOR CODE,The letters which follow form a Subject Indicator Code (SIC).
+THIS IS,Indicates identity of calling station.
+THIS IS A DIRECTED NET,All calls to be offered through Control.
+THIS IS A FREE NET,Used to cancel a directed net.
+THIS IS AN AUTOMATIC REBROADCAST NET,A rebroadcast station tells all stations that he is starting automatic rebroadcast.
+THIS IS A MANUAL REBROADCAST NET,A rebroadcast station tells all stations that he is starting manual rebroadcast.
+THROUGH ME,Invitation by a station to relay through him.
+TIME,Exact time will follow on the word NOW. (Given on the minute).
+TUNE ANTENNA(S),Order by Control for the antenna(s) of self-tuning set(s) to be tuned.
+UNKNOWN STATION,The identity of the station I am calling is unknown to me.
+UNWORKABLE,Impossible for communications. Traffic cannot be passed until standard has improved.
+VERIFY,Verify portion indicated with originator and send correct version.
+VISUAL LOOK,Instruction from ground station to pilot to look visually for a land-mark which he can use for homing.
+WAIT OUT,Your transmission is received; a further transmission on the same subject will follow later.
+WORD AFTER / WORD BEFORE,Used to identify a word within a message.
+WRONG,What has been said is wrong; the correct version is ...
+YOU ARE REBROADCAST STATION,The sub-unit Control instructs his own rear link station to join their net to the unit net by tactical rebroadcast.
+YOUR CALLSIGN IS,"Allocation of a callsign to a station which has newly joined a working net, and which has asked for a callsign."
