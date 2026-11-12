@@ -109,10 +109,7 @@ const scopeLabel = computed(() => TABS.find(t => t.id === tab.value)!.label.toLo
     <!-- Header -->
     <header class="mx-auto max-w-3xl px-5 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-7 sm:pt-16">
       <div class="flex items-center gap-4">
-        <div class="relative grid size-14 flex-none place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-deep font-serif text-[24px] font-semibold text-[#fffdf8] shadow-lift ring-1 ring-black/5">
-          SD
-          <span class="absolute inset-x-2 top-1 h-px rounded-full bg-white/30" />
-        </div>
+        <img src="/logo.svg" alt="" width="56" height="56" class="size-14 flex-none drop-shadow-[0_8px_18px_rgba(22,51,42,.28)]">
         <div class="min-w-0">
           <h1 class="m-0 font-serif text-[clamp(30px,5.5vw,44px)] leading-[1.05] font-semibold tracking-tight">
             Service Dictionary
