@@ -1,4 +1,4 @@
-import { ENTRIES, type AbbrSort, type Entry, type Tab } from '~/utils/dictionary'
+import { ENTRIES, SYMBOL_CATEGORIES, type AbbrSort, type Entry, type Tab } from '~/utils/dictionary'
 
 /** Ranking groups for search results (lower = better). */
 export const Rank = {
@@ -146,13 +146,18 @@ export function useDictionary() {
 
   /** Number of matches for each filter button. */
   const matchCounts = computed(() => {
-    const c = { all: 0, t: 0, a: 0, p: 0 }
+    const c = { all: 0, t: 0, a: 0, p: 0, s: 0 }
     for (const e of matches.value.list) { c.all++; c[e.kind]++ }
     return c
   })
 
   const results = computed<Entry[]>(() => {
     if (nq.value) return tab.value === 'all' ? matches.value.list : matches.value.list.filter(e => e.kind === tab.value)
+    // Symbols tab: the document's order (Army, Naval, Air Force, MOOTW; by serial number)
+    if (tab.value === 's') {
+      const sec = (e: Entry) => SYMBOL_CATEGORIES.indexOf(e.symbol!.category)
+      return [...pool.value].sort((a, b) => sec(a) - sec(b) || a.symbol!.serial - b.symbol!.serial)
+    }
     // Entries starting with a number or symbol ("1st Lt", "2iC") go after Z
     const numeric = (e: Entry) => (letterOf(e) === '#' ? 1 : 0)
     let list = [...pool.value].sort((a, b) => numeric(a) - numeric(b) || collator.compare(sortKey(a), sortKey(b)))

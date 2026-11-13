@@ -74,7 +74,7 @@ const planRows = computed<[string, string][]>(() => {
 
 const BENEFITS = [
   'Unlimited entries every day',
-  `${fmt(COUNTS.t)} terms, ${fmt(COUNTS.a)} abbreviations, ${fmt(COUNTS.p)} prowords`,
+  `${fmt(COUNTS.t)} terms, ${fmt(COUNTS.a)} abbreviations, ${fmt(COUNTS.p)} prowords${COUNTS.s ? `, ${fmt(COUNTS.s)} symbols` : ''}`,
   'Save, share and copy',
   'Works offline',
 ]

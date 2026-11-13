@@ -32,11 +32,13 @@ const TAG = {
   t: { label: 'Term', cls: '' },
   a: { label: 'Abbreviation', cls: '' },
   p: { label: 'Proword', cls: '' },
+  s: { label: 'Symbol', cls: '' },
 }
 const titleCls = {
   t: 'font-serif text-[18px] font-semibold',
   a: 'text-[16px] font-semibold text-abbr',
   p: 'text-[15px] font-semibold tracking-[.03em]',
+  s: 'text-[16px] font-semibold',
 }
 </script>
 
@@ -53,10 +55,18 @@ const titleCls = {
       <span class="line-clamp-2 min-w-0 flex-1 text-[15.5px] leading-snug" v-html="highlight(entry.meaning, words)" />
     </template>
 
+    <!-- Military symbol: the symbol from the document on a white tile -->
+    <span
+      v-if="entry.kind === 's' && entry.symbol"
+      class="grid h-12 w-16 flex-none place-items-center rounded-md border border-line bg-white p-1"
+    >
+      <img :src="entry.symbol.image" alt="" loading="lazy" class="block h-auto max-h-[38px] w-auto max-w-[54px] object-contain">
+    </span>
+
     <!-- Standard row -->
-    <span v-else class="min-w-0 flex-1">
+    <span v-if="!(compact && entry.kind === 'a')" class="min-w-0 flex-1">
       <span class="flex min-w-0 items-center gap-2">
-        <span class="min-w-0 truncate leading-snug" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
+        <span class="min-w-0 leading-snug" :class="[titleCls[entry.kind], entry.kind === 's' ? 'line-clamp-2' : 'truncate']" v-html="highlight(title, words)" />
         <span
           v-if="showKind"
           class="flex-none text-[12px] text-muted"
@@ -66,7 +76,7 @@ const titleCls = {
       <span
         class="mt-0.5 text-[13.5px] leading-snug text-muted"
         :class="entry.kind === 'a' ? 'line-clamp-1 text-ink/75' : 'line-clamp-2'"
-        v-html="highlight(subtitle, words)"
+        v-html="entry.kind === 's' && !entry.meaning ? highlight(entry.symbol!.category + ' symbols', words) : highlight(subtitle, words)"
       />
     </span>
 

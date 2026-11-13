@@ -3,7 +3,7 @@ import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import { ALPHABET, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
-const { tab, query, abbrSort, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
+const { tab, query, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
 const library = useLibrary()
 const access = useAccess()
 const payments = usePayments()
@@ -78,7 +78,6 @@ function setFilter(id: Tab) {
   tab.value = id
   scrollTop()
 }
-watch(abbrSort, (v) => { try { localStorage.setItem('sd-abbr-sort', v) } catch {} })
 
 /* ---------- list (renders progressively for speed) ---------- */
 const scroller = ref<HTMLElement>()
@@ -103,7 +102,8 @@ const rows = computed<Row[]>(() => {
       if (i === 0 && nameMatches.value) out.push({ type: 'label', key: 'lbl-names', label: 'Matching names', count: nameMatches.value })
       if (i === nameMatches.value) out.push({ type: 'label', key: 'lbl-meanings', label: 'Found in meanings', count: results.value.length - nameMatches.value })
     } else {
-      const l = letterOf(e)
+      // Symbols are grouped by the document's sections; everything else by letter
+      const l = tab.value === 's' ? `${e.symbol!.category} symbols` : letterOf(e)
       if (l !== last) { out.push({ type: 'letter', key: `L${l}`, letter: l }); last = l }
     }
     out.push({ type: 'entry', key: `E${e.id}`, entry: e })
@@ -167,10 +167,6 @@ function notify(m: string) {
 /* ---------- lifecycle ---------- */
 let observer: IntersectionObserver | undefined
 onMounted(() => {
-  try {
-    const s = localStorage.getItem('sd-abbr-sort')
-    if (s === 'abbr' || s === 'full') abbrSort.value = s
-  } catch {}
   observer = new IntersectionObserver((entries) => {
     if (entries[0]?.isIntersecting && view.value === 'browse' && shown.value < results.value.length) shown.value += PAGE
   }, { root: scroller.value, rootMargin: '800px' })
@@ -266,14 +262,7 @@ onBeforeUnmount(() => observer?.disconnect())
             >
               {{ f.short }}
             </button>
-            <button
-              v-if="tab === 'a'" type="button"
-              class="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-line px-3 text-[13px] font-medium whitespace-nowrap text-ink/75 active:bg-line/50"
-              @click="abbrSort = abbrSort === 'full' ? 'abbr' : 'full'"
-            >
-              <AppIcon name="sort" :size="14" />
-              {{ abbrSort === 'full' ? 'By full form' : 'By abbreviation' }}
-            </button>
+
           </div>
       </div>
     </header>
@@ -291,7 +280,7 @@ onBeforeUnmount(() => observer?.disconnect())
           >
             <span class="min-w-0 flex-1 text-[13px] leading-snug text-ink/80">
               <b class="font-semibold">{{ access.freeLeftToday.value }} free {{ access.freeLeftToday.value === 1 ? 'entry' : 'entries' }} left today.</b>
-              Unlimited from ₦250/month.
+              Unlimited for ₦500 a month.
             </span>
             <span class="flex-none text-[13.5px] font-semibold text-accent">Upgrade</span>
           </button>
@@ -349,7 +338,7 @@ onBeforeUnmount(() => observer?.disconnect())
 
       <!-- A–Z index -->
       <IndexScrubber
-        v-if="view === 'browse' && !query.trim() && results.length > 30"
+        v-if="view === 'browse' && tab !== 's' && !query.trim() && results.length > 30"
         class="absolute top-0 right-0 bottom-0 z-[2]"
         :letters="scrubLetters" :available="lettersAvailable" @jump="jumpTo"
       />

@@ -1,6 +1,7 @@
 import raw from '~/data/dictionary.json'
+import symbolsRaw from '~/data/symbols.json'
 
-export type Kind = 't' | 'a' | 'p'
+export type Kind = 't' | 'a' | 'p' | 's'
 export type Tab = 'all' | Kind
 export type AbbrSort = 'full' | 'abbr'
 
@@ -11,8 +12,10 @@ export interface Entry {
   headword: string
   /** Abbreviation (abbreviations only) */
   abbr?: string
-  /** Meaning / definition text, exactly as in the source file */
+  /** Meaning / definition text, exactly as in the source file (remarks, for symbols) */
   meaning: string
+  /** Military symbols only */
+  symbol?: { id: string; category: string; serial: number; image: string; remarkImage: string | null }
   // lower-cased copies for searching
   lh: string
   la: string
@@ -36,10 +39,20 @@ const make = (kind: Kind, headword: string, meaning: string, abbr?: string): Ent
   lm: meaning.toLowerCase(),
 })
 
+interface SymbolRow { id: string; category: string; serial: number; description: string; remarks: string; image: string; remarkImage: string | null }
+
+/** Order of the symbol sections, as in the source document */
+export const SYMBOL_CATEGORIES = ['Army', 'Naval', 'Air Force', 'Operations Other Than War']
+
 export const ENTRIES: Entry[] = [
   ...data.t.map(([w, m]) => make('t', trimStop(w), m)),
   ...data.a.map(([m, a]) => make('a', m, m, a)),
   ...data.p.map(([w, m]) => make('p', w, m)),
+  ...(symbolsRaw as SymbolRow[]).map((r) => {
+    const e = make('s', r.description, r.remarks)
+    e.symbol = { id: r.id, category: r.category, serial: r.serial, image: `/symbols/${r.image}`, remarkImage: r.remarkImage ? `/symbols/${r.remarkImage}` : null }
+    return e
+  }),
 ]
 
 export const COUNTS: Record<Tab, number> = {
@@ -47,6 +60,7 @@ export const COUNTS: Record<Tab, number> = {
   t: data.t.length,
   a: data.a.length,
   p: data.p.length,
+  s: (symbolsRaw as unknown[]).length,
 }
 
 export const TABS: { id: Tab; label: string; slug: string }[] = [
@@ -54,9 +68,10 @@ export const TABS: { id: Tab; label: string; slug: string }[] = [
   { id: 't', label: 'Terms', slug: 'terms' },
   { id: 'a', label: 'Abbreviations', slug: 'abbreviations' },
   { id: 'p', label: 'Prowords', slug: 'prowords' },
-]
+  { id: 's', label: 'Symbols', slug: 'symbols' },
+].filter(t => t.id !== 's' || (symbolsRaw as unknown[]).length > 0) // tab shows only when symbols are included
 
-export const KIND_LABEL: Record<Kind, string> = { t: 'Term', a: 'Abbreviation', p: 'Proword' }
+export const KIND_LABEL: Record<Kind, string> = { t: 'Term', a: 'Abbreviation', p: 'Proword', s: 'Symbol' }
 
 export const ALPHABET = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#']
 

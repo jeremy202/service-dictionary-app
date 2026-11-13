@@ -4,7 +4,7 @@ import { ENTRIES, type Entry } from '~/utils/dictionary'
  * Saved entries and recently viewed entries, kept on the phone.
  * Entries are stored by a content key (not by position) so they survive data updates.
  */
-export const entryKey = (e: Entry) => `${e.kind}|${e.headword}|${e.abbr ?? ''}`
+export const entryKey = (e: Entry) => `${e.kind}|${e.headword}|${e.abbr ?? ''}${e.symbol ? `|${e.symbol.id}` : ''}`
 
 const BY_KEY = new Map<string, Entry>()
 for (const e of ENTRIES) if (!BY_KEY.has(entryKey(e))) BY_KEY.set(entryKey(e), e)
