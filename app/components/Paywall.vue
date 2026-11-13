@@ -18,7 +18,7 @@ const access = useAccess()
 const payments = usePayments()
 const play = usePlayBilling() // Play Store version: Google Play Billing instead of Paystack
 onMounted(() => play.loadPrices())
-const busy = computed(() => busy || play.busy.value)
+const busy = computed(() => payments.busy.value || play.busy.value)
 const priceOf = (p: (typeof PLANS)[number]) => play.priceLabel(p.id) ?? naira(p.price)
 const noteOf = (p: (typeof PLANS)[number]) => {
   if (!play.enabled) return p.note
@@ -278,11 +278,6 @@ async function restore() {
           type="button" class="h-13 w-full cursor-pointer rounded-2xl bg-accent text-[16px] font-semibold text-paper active:scale-[.99]"
           @click="emit('close')"
         >Done</button>
-        <button
-          v-if="premium && playSub && mode === 'buy'"
-          type="button" class="mt-1.5 w-full cursor-pointer rounded-lg py-2 text-[13.5px] font-medium text-accent"
-          @click="play.manage()"
-        >Manage subscription in Google Play</button>
         <!-- Payment waiting for confirmation: paying is locked -->
         <button
           v-else-if="pending"
@@ -303,6 +298,11 @@ async function restore() {
           Continue · {{ priceOf(plan) }}
         </button>
 
+        <button
+          v-if="premium && playSub && mode === 'buy'"
+          type="button" class="mt-1.5 w-full cursor-pointer rounded-lg py-2 text-[13.5px] font-medium text-accent"
+          @click="play.manage()"
+        >Manage subscription in Google Play</button>
         <div v-if="!premium" class="mt-1.5 flex items-center justify-between">
           <button
             type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-accent"
