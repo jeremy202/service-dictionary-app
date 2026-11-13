@@ -32,7 +32,8 @@ const selected = ref<PlanId>('yearly')
 const plan = computed(() => PLANS.find(p => p.id === selected.value)!)
 const email = ref('')
 const error = ref('')
-const mode = ref<'buy' | 'restore'>('buy')
+const mode = ref<'buy' | 'restore' | 'code'>('buy')
+const code = ref('')
 
 try { email.value = localStorage.getItem('sd-email') || '' } catch {}
 const validEmail = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim()))
@@ -45,6 +46,7 @@ const pending = computed(() => !!payments.pending.value)
 const showPlans = computed(() => mode.value === 'buy' && !premium.value)
 
 const headline = computed(() => {
+  if (mode.value === 'code') return 'Enter access code'
   if (mode.value === 'restore') return 'Restore your purchase'
   if (premium.value) return 'You\'re on Premium'
   if (pending.value) return 'Confirming your payment'
@@ -53,6 +55,7 @@ const headline = computed(() => {
   return 'Go Premium'
 })
 const subline = computed(() => {
+  if (mode.value === 'code') return 'An access code unlocks Premium on this phone for 30 days.'
   if (mode.value === 'restore') {
     return play.enabled
       ? 'Premium comes back for the Google account signed in to Google Play on this phone.'
@@ -115,6 +118,19 @@ async function checkStatus() {
   const r = await payments.checkPending()
   if (r?.ok) { emit('notify', 'Payment successful. Premium unlocked'); emit('close') }
   else if (r && !r.ok && payments.pending.value) error.value = r.error
+}
+
+async function redeem() {
+  error.value = ''
+  if (!code.value.trim()) { error.value = 'Enter your access code.'; return }
+  const r = await payments.redeem(code.value.trim())
+  if (r.ok) { emit('notify', 'Access code accepted. Premium unlocked'); emit('close') }
+  else error.value = r.error
+}
+
+function openPrivacy() {
+  const url = `${(useRuntimeConfig().public.paymentsApi as string || '').replace(/\/$/, '')}/privacy`
+  import('@capacitor/browser').then(({ Browser }) => Browser.open({ url })).catch(() => window.open(url, '_blank'))
 }
 
 async function restore() {
@@ -221,14 +237,34 @@ async function restore() {
           >
         </div>
 
+        <div v-if="mode === 'code'" class="mt-4">
+          <label class="mb-1.5 block text-[12.5px] font-semibold text-ink/80" for="access-code">Access code</label>
+          <input
+            id="access-code" v-model="code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
+            placeholder="XX-XXXXXX-XXXXXXXX"
+            class="h-12 w-full rounded-xl border border-line bg-paper px-4 font-mono text-[16px] uppercase outline-none focus:border-accent/60 focus:ring-3 focus:ring-accent-soft"
+            @keydown.enter="redeem"
+          >
+        </div>
+
         <p v-if="error" class="mt-3 mb-0 rounded-xl border border-danger/30 bg-danger-soft px-3.5 py-2.5 text-[13.5px] text-danger">{{ error }}</p>
       </div>
 
       <!-- Actions -->
       <div class="flex-none border-t border-line/70 bg-canvas px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <!-- Access code -->
+        <button
+          v-if="mode === 'code'"
+          type="button" :disabled="busy"
+          class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
+          @click="redeem"
+        >
+          <span v-if="busy" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+          Unlock
+        </button>
         <!-- Restore -->
         <button
-          v-if="mode === 'restore'"
+          v-else-if="mode === 'restore'"
           type="button" :disabled="busy"
           class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
           @click="restore"
@@ -272,12 +308,20 @@ async function restore() {
             type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-accent"
             @click="mode = mode === 'buy' ? 'restore' : 'buy'; error = ''"
           >{{ mode === 'buy' ? 'Restore purchase' : 'See plans' }}</button>
+          <button
+            v-if="mode === 'buy'"
+            type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-accent"
+            @click="mode = 'code'; error = ''"
+          >Access code</button>
           <button type="button" class="cursor-pointer rounded-lg px-1 py-2 text-[13.5px] font-medium text-muted" @click="emit('close')">{{ laterLabel }}</button>
         </div>
         <p class="m-0 mt-1 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-muted">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
           <template v-if="play.enabled">Secure payment by Google Play{{ selected === 'lifetime' ? ' · One-time payment' : ' · Cancel anytime' }}</template>
           <template v-else>Secure payment by Paystack · No automatic renewals</template>
+        </p>
+        <p class="m-0 mt-1 text-center text-[11.5px]">
+          <button type="button" class="cursor-pointer text-muted underline underline-offset-2" @click="openPrivacy">Privacy policy</button>
         </p>
       </div>
     </div>

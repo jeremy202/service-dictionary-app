@@ -21,7 +21,7 @@ export interface Entitlement {
   reference: string
   paidAt: string // ISO
   expiresAt: string | null // ISO; null = lifetime
-  source?: 'paystack' | 'play'
+  source?: 'paystack' | 'play' | 'code'
 }
 
 const DAY = 86_400_000

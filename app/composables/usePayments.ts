@@ -127,5 +127,20 @@ export function usePayments() {
     }
   }
 
-  return { configured, busy, message, pending, pay, verify, restore, checkPending, listen }
+  /** Access codes (e.g. for Google Play's reviewers): 30 days of full access. */
+  async function redeem(code: string): Promise<Result> {
+    if (!configured) return { ok: false, error: 'Payments are not switched on yet.' }
+    busy.value = true
+    try {
+      const r = await call('/api/redeem', { method: 'POST', body: JSON.stringify({ code }) })
+      access.setEntitlement(r.entitlement)
+      return { ok: true, entitlement: r.entitlement }
+    } catch (e: any) {
+      return { ok: false, error: e.message }
+    } finally {
+      busy.value = false
+    }
+  }
+
+  return { configured, busy, message, pending, pay, verify, restore, redeem, checkPending, listen }
 }
