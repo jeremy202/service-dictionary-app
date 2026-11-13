@@ -19,3 +19,9 @@
   from = "/privacy"
   to = "/privacy.html"
   status = 200
+
+# Store graphics (for uploading to Play Console)
+[[headers]]
+  for = "/store/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
