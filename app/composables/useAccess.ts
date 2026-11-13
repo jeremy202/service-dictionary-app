@@ -21,6 +21,7 @@ export interface Entitlement {
   reference: string
   paidAt: string // ISO
   expiresAt: string | null // ISO; null = lifetime
+  source?: 'paystack' | 'play'
 }
 
 const DAY = 86_400_000
@@ -160,9 +161,21 @@ export function useAccess() {
     write(K_PLAN, e)
   }
 
+  /** Google Play is the source of truth for Play purchases: renewals, cancellations and refunds
+   *  replace what was saved, even if that shortens it. Leaves a Paystack plan untouched. */
+  function syncPlayEntitlement(e: Entitlement | null) {
+    const cur = entitlement.value
+    if (cur && cur.source !== 'play' && (cur.expiresAt === null || new Date(cur.expiresAt).getTime() > now.value)) {
+      if (e) setEntitlement(e)
+      return
+    }
+    entitlement.value = e
+    try { e ? write(K_PLAN, e) : localStorage.removeItem(K_PLAN) } catch {}
+  }
+
   return {
     inTrial, trialDaysLeft, hasPlan, planExpired, planDaysLeft, entitlement, trialSynced,
-    unlimited, freeLeftToday, usedToday, useEntry, setEntitlement,
+    unlimited, freeLeftToday, usedToday, useEntry, setEntitlement, syncPlayEntitlement,
     /** Resolves once the server's trial date has been fetched (or failed). */
     syncTrial: () => syncTrial(api) ?? Promise.resolve(),
   }

@@ -1,6 +1,7 @@
 # Service Dictionary payment service (Paystack), hosted on Netlify.
 # Setting needed in Netlify (Site configuration → Environment variables):
 #   PAYSTACK_SECRET_KEY = sk_test_… (testing) or sk_live_… (real payments)
+#   GOOGLE_PLAY_SERVICE_ACCOUNT = JSON key of the Google Play service account (Play Store version)
 
 [build]
   publish = "public"
@@ -12,4 +13,9 @@
 [[redirects]]
   from = "/paid"
   to = "/paid.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
   status = 200

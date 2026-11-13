@@ -7,8 +7,9 @@ android {
         applicationId "com.servicedictionary.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // The Play Store build passes these in (each upload needs a higher versionCode)
+        versionCode((System.getenv("SD_VERSION_CODE") ?: "1") as int)
+        versionName System.getenv("SD_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -25,12 +26,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // Play Store upload key. Never stored in the repository: the build reads it from
+        // GitHub secrets (see .github/workflows/play-store.yml).
+        if (System.getenv("SD_UPLOAD_KEYSTORE")) {
+            release {
+                storeFile file(System.getenv("SD_UPLOAD_KEYSTORE"))
+                storePassword System.getenv("SD_UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("SD_UPLOAD_KEY_ALIAS")
+                keyPassword System.getenv("SD_UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+            if (System.getenv("SD_UPLOAD_KEYSTORE")) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

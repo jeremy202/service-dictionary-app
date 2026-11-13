@@ -183,10 +183,16 @@ onMounted(() => {
     })
   }
 })
+const play = usePlayBilling()
 onMounted(async () => {
-  payments.listen(onPaymentResult)
-  const r = await payments.checkPending() // a payment finished while the app was closed
-  if (r?.ok) { onPaymentResult(r); return }
+  if (play.enabled) {
+    // Play Store version: re-read Google Play purchases (renewals, cancellations, refunds)
+    await Promise.race([play.refresh(), new Promise(res => setTimeout(res, 2500))])
+  } else {
+    payments.listen(onPaymentResult)
+    const r = await payments.checkPending() // a payment finished while the app was closed
+    if (r?.ok) { onPaymentResult(r); return }
+  }
   // Trial users see the plans each time they open the app (after the trial date is confirmed)
   await Promise.race([access.syncTrial(), new Promise(res => setTimeout(res, 2500))])
   await new Promise(res => setTimeout(res, 600)) // let the splash screen finish
@@ -280,7 +286,7 @@ onBeforeUnmount(() => observer?.disconnect())
           >
             <span class="min-w-0 flex-1 text-[13px] leading-snug text-ink/80">
               <b class="font-semibold">{{ access.freeLeftToday.value }} free {{ access.freeLeftToday.value === 1 ? 'entry' : 'entries' }} left today.</b>
-              Unlimited for ₦500 a month.
+              Unlimited for {{ play.priceLabel('monthly') ?? '₦500' }} a month.
             </span>
             <span class="flex-none text-[13.5px] font-semibold text-accent">Upgrade</span>
           </button>

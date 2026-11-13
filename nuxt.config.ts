@@ -12,6 +12,10 @@ export default defineNuxtConfig({
       // e.g. https://service-dictionary-pay.netlify.app. Can also be set with
       // NUXT_PUBLIC_PAYMENTS_API when building. Empty = payments switched off.
       paymentsApi: 'https://service-dictionary-pay.netlify.app',
+      // Where the app is distributed. 'direct' = the .apk shared yourself (pays with Paystack);
+      // 'play' = the Google Play Store version (pays with Google Play Billing, as Play requires).
+      // Set with NUXT_PUBLIC_STORE=play when building the Play Store bundle.
+      store: 'direct',
     },
   },
   vite: {

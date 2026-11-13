@@ -1,0 +1,110 @@
+name: Build for Google Play
+
+# Builds the signed Play Store bundle (.aab). Start it from the Actions tab:
+# "Build for Google Play" → "Run workflow".
+#
+# Repository secrets needed (Settings → Secrets and variables → Actions):
+#   ANDROID_UPLOAD_KEYSTORE_BASE64    the upload key file, base64-encoded
+#   ANDROID_UPLOAD_KEYSTORE_PASSWORD  its password
+#   ANDROID_UPLOAD_KEY_ALIAS          upload
+#   ANDROID_UPLOAD_KEY_PASSWORD       same as the keystore password
+# Optional, to send each build straight to Play Console's internal testing track:
+#   PLAY_SERVICE_ACCOUNT_JSON         JSON key of the Google Play service account
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Also upload to this Play Console track (needs PLAY_SERVICE_ACCOUNT_JSON; first upload must be done by hand)'
+        type: choice
+        options: [none, internal, alpha]
+        default: none
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    env:
+      SD_VERSION_CODE: ${{ github.run_number }}
+      SD_VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Check the upload key secrets are set
+        env:
+          KS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KS" ]; then
+            echo "::error::Add the ANDROID_UPLOAD_KEYSTORE_* secrets first (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the web app (Play Store version, Google Play Billing)
+        run: npm run generate
+        env:
+          NUXT_PUBLIC_STORE: play
+
+      - name: Copy the web app into the Android project
+        run: npx cap sync android
+
+      - name: Restore the upload key
+        run: echo "${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+
+      - name: Build the signed bundle
+        working-directory: android
+        env:
+          SD_UPLOAD_KEYSTORE: ${{ runner.temp }}/upload.jks
+          SD_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          SD_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          SD_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Name the bundle
+        run: |
+          mkdir -p dist-aab
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist-aab/ServiceDictionary-play-${{ github.run_number }}.aab"
+          rm -f "$RUNNER_TEMP/upload.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ServiceDictionary-play-${{ github.run_number }}
+          path: dist-aab/*.aab
+
+      - name: Publish the bundle on the Releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: play-${{ github.run_number }}
+          name: Service Dictionary for Google Play (version 1.0.${{ github.run_number }})
+          body: |
+            Signed bundle for Google Play (versionCode ${{ github.run_number }}).
+
+            Upload the `.aab` file in Play Console → Test and release → (track) → Create new release.
+            This file can't be installed on a phone directly; use the Android test build (.apk) for that.
+          files: dist-aab/*.aab
+          make_latest: false
+
+      - name: Upload to Play Console
+        if: ${{ inputs.track != 'none' && inputs.track != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.servicedictionary.app
+          releaseFiles: dist-aab/*.aab
+          track: ${{ inputs.track }}
+          status: completed

@@ -16,6 +16,17 @@ const emit = defineEmits<{ close: []; notify: [message: string] }>()
 
 const access = useAccess()
 const payments = usePayments()
+const play = usePlayBilling() // Play Store version: Google Play Billing instead of Paystack
+onMounted(() => play.loadPrices())
+const busy = computed(() => busy || play.busy.value)
+const priceOf = (p: (typeof PLANS)[number]) => play.priceLabel(p.id) ?? naira(p.price)
+const noteOf = (p: (typeof PLANS)[number]) => {
+  if (!play.enabled) return p.note
+  if (p.id === 'monthly') return 'Renews monthly · cancel anytime'
+  if (p.id === 'yearly') return 'Renews yearly · save 50%'
+  return p.note
+}
+const playSub = computed(() => access.entitlement.value?.source === 'play' && access.entitlement.value.expiresAt !== null)
 
 const selected = ref<PlanId>('yearly')
 const plan = computed(() => PLANS.find(p => p.id === selected.value)!)
@@ -42,9 +53,14 @@ const headline = computed(() => {
   return 'Go Premium'
 })
 const subline = computed(() => {
-  if (mode.value === 'restore') return 'Enter the email you paid with. Premium comes back on this phone.'
+  if (mode.value === 'restore') {
+    return play.enabled
+      ? 'Premium comes back for the Google account signed in to Google Play on this phone.'
+      : 'Enter the email you paid with. Premium comes back on this phone.'
+  }
   if (premium.value) {
     const e = access.entitlement.value!
+    if (playSub.value) return `Your ${PLANS.find(p => p.id === e.plan)?.name.toLowerCase()} plan renews automatically. You can manage or cancel it in Google Play.`
     return e.expiresAt === null
       ? 'Lifetime access. Thank you for your support!'
       : `Your ${PLANS.find(p => p.id === e.plan)?.name.toLowerCase()} plan is active until ${dateFmt(e.expiresAt)}. You can renew once it ends.`
@@ -66,9 +82,9 @@ const planRows = computed<[string, string][]>(() => {
   return [
     ['Plan', PLANS.find(p => p.id === e.plan)?.name ?? e.plan],
     ['Paid on', dateFmt(e.paidAt)],
-    ['Access until', e.expiresAt ? dateFmt(e.expiresAt) : 'Forever'],
+    ['Access until', playSub.value ? 'Renews automatically' : e.expiresAt ? dateFmt(e.expiresAt) : 'Forever'],
     ...(e.email ? [['Email', e.email] as [string, string]] : []),
-    ['Reference', e.reference],
+    ...(e.reference ? [['Reference', e.reference] as [string, string]] : []),
   ]
 })
 
@@ -80,8 +96,14 @@ const BENEFITS = [
 ]
 
 async function continueToPay() {
-  if (pending.value || premium.value || payments.busy.value) return
+  if (pending.value || premium.value || busy.value) return
   error.value = ''
+  if (play.enabled) {
+    const r = await play.buy(selected.value)
+    if (r.ok) { emit('notify', 'Payment successful. Premium unlocked'); emit('close') }
+    else if (!r.cancelled) error.value = r.error
+    return
+  }
   if (!validEmail.value) { error.value = 'Enter your email address: Paystack sends your receipt there.'; return }
   try { localStorage.setItem('sd-email', email.value.trim()) } catch {}
   const r = await payments.pay(selected.value, email.value.trim())
@@ -97,6 +119,12 @@ async function checkStatus() {
 
 async function restore() {
   error.value = ''
+  if (play.enabled) {
+    const r = await play.restore()
+    if (r.ok) { emit('notify', 'Purchase restored'); emit('close') }
+    else error.value = r.error
+    return
+  }
   if (!validEmail.value) { error.value = 'Enter the email you paid with.'; return }
   const r = await payments.restore(email.value.trim())
   if (r.ok) { emit('notify', 'Purchase restored'); emit('close') }
@@ -170,10 +198,10 @@ async function restore() {
             ><AppIcon v-if="selected === p.id" name="check" :size="12" /></span>
             <span class="min-w-0 flex-1">
               <span class="block text-[16px] font-semibold">{{ p.name }}</span>
-              <span class="block text-[12.5px] text-muted">{{ p.note }}</span>
+              <span class="block text-[12.5px] text-muted">{{ noteOf(p) }}</span>
             </span>
             <span class="text-right">
-              <span class="block font-serif text-[22px] leading-none font-semibold">{{ naira(p.price) }}</span>
+              <span class="block font-serif text-[22px] leading-none font-semibold">{{ priceOf(p) }}</span>
               <span class="mt-1 block text-[11.5px] text-muted">{{ p.period }}</span>
             </span>
             <span v-if="p.badge" class="absolute -top-2.5 right-4 rounded-sm bg-ink px-2 py-0.5 text-[10.5px] font-semibold tracking-[.04em] text-paper">{{ p.badge }}</span>
@@ -181,7 +209,7 @@ async function restore() {
         </div>
 
         <!-- Email -->
-        <div v-if="(showPlans && !pending) || mode === 'restore'" class="mt-4">
+        <div v-if="!play.enabled && ((showPlans && !pending) || mode === 'restore')" class="mt-4">
           <label class="mb-1.5 block text-[12.5px] font-semibold text-ink/80" for="pay-email">
             {{ mode === 'buy' ? 'Email for your receipt' : 'Email you paid with' }}
           </label>
@@ -201,11 +229,11 @@ async function restore() {
         <!-- Restore -->
         <button
           v-if="mode === 'restore'"
-          type="button" :disabled="payments.busy.value"
+          type="button" :disabled="busy"
           class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
           @click="restore"
         >
-          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+          <span v-if="busy" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
           Restore purchase
         </button>
         <!-- Already paid: no payment button until the plan ends -->
@@ -214,24 +242,29 @@ async function restore() {
           type="button" class="h-13 w-full cursor-pointer rounded-2xl bg-accent text-[16px] font-semibold text-paper active:scale-[.99]"
           @click="emit('close')"
         >Done</button>
+        <button
+          v-if="premium && playSub && mode === 'buy'"
+          type="button" class="mt-1.5 w-full cursor-pointer rounded-lg py-2 text-[13.5px] font-medium text-accent"
+          @click="play.manage()"
+        >Manage subscription in Google Play</button>
         <!-- Payment waiting for confirmation: paying is locked -->
         <button
           v-else-if="pending"
-          type="button" :disabled="payments.busy.value"
+          type="button" :disabled="busy"
           class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-accent bg-paper text-[16px] font-semibold text-accent transition active:scale-[.99] disabled:opacity-60"
           @click="checkStatus"
         >
-          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          <span v-if="busy" class="size-4.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
           Check payment status
         </button>
         <button
           v-else
-          type="button" :disabled="payments.busy.value"
+          type="button" :disabled="busy"
           class="flex h-13 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-accent text-[16px] font-semibold text-paper shadow-lift transition active:scale-[.99] disabled:opacity-60"
           @click="continueToPay"
         >
-          <span v-if="payments.busy.value" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
-          Continue · {{ naira(plan.price) }}
+          <span v-if="busy" class="size-4.5 animate-spin rounded-full border-2 border-paper/40 border-t-paper" />
+          Continue · {{ priceOf(plan) }}
         </button>
 
         <div v-if="!premium" class="mt-1.5 flex items-center justify-between">
@@ -243,7 +276,8 @@ async function restore() {
         </div>
         <p class="m-0 mt-1 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-muted">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-          Secure payment by Paystack · No automatic renewals
+          <template v-if="play.enabled">Secure payment by Google Play{{ selected === 'lifetime' ? ' · One-time payment' : ' · Cancel anytime' }}</template>
+          <template v-else>Secure payment by Paystack · No automatic renewals</template>
         </p>
       </div>
     </div>
