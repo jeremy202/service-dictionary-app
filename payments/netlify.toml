@@ -25,3 +25,8 @@
   for = "/store/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/u-cfdd1cc333f4cd8bc2af86c1/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "https://play.google.com"
