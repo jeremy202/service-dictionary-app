@@ -44,7 +44,7 @@ function end() {
     <Transition enter-from-class="opacity-0 scale-75" leave-to-class="opacity-0 scale-75" enter-active-class="transition duration-150" leave-active-class="transition duration-200">
       <div
         v-if="active"
-        class="pointer-events-none fixed top-1/2 left-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-2xl bg-ink/80 font-serif text-[40px] font-semibold text-canvas backdrop-blur"
+        class="pointer-events-none fixed top-1/2 left-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-3xl bg-accent font-serif text-[40px] font-bold text-paper shadow-lift"
       >
         {{ active }}
       </div>

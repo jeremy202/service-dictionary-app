@@ -12,6 +12,8 @@ defineProps<{ name: string; size?: number; filled?: boolean }>()
       <path d="M12 7c-1.6-1.4-4-2-7-2v12.5c3 0 5.4.6 7 2 1.6-1.4 4-2 7-2V5c-3 0-5.4.6-7 2Z" :fill="filled ? 'currentColor' : 'none'" :fill-opacity="filled ? .14 : 0" />
       <path d="M12 7v12.5" />
     </template>
+    <template v-else-if="name === 'trash'"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1 1 0 0 0 1 .8h7.2a1 1 0 0 0 1-.8L17.5 7M10 11v5.5M14 11v5.5" /></template>
+    <template v-else-if="name === 'arrow-up-right'"><path d="M8 16 16.5 7.5M9.5 7.5h7v7" /></template>
     <template v-else-if="name === 'lock'"><rect x="5" y="10.5" width="14" height="10" rx="2" :fill="filled ? 'currentColor' : 'none'" :fill-opacity="filled ? .14 : 0" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></template>
     <template v-else-if="name === 'unlock'"><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 7.6-1.7" /></template>
     <template v-else-if="name === 'manual'"><path d="M6.5 4h8l3 3v13h-11Z" :fill="filled ? 'currentColor' : 'none'" :fill-opacity="filled ? .14 : 0" /><path d="M14.5 4v3h3M9 11h6M9 14.5h6M9 18h4" /></template>

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'com.servicedictionary.app',
-  appName: 'Service Dictionary',
+  appName: 'Service Guide',
   // Output of `npm run generate`
   webDir: '.output/public',
   backgroundColor: '#ffffff',

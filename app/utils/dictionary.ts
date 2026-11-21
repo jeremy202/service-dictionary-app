@@ -69,12 +69,12 @@ export const COUNTS: Record<Tab, number> = {
   s: (symbolsRaw as unknown[]).length,
 }
 
-// The app opens on Terms; "All" sits at the far right
+// The app opens on Dictionary; "All" sits at the far right
 export const TABS: { id: Tab; label: string; slug: string }[] = [
-  { id: 't', label: 'Terms', slug: 'terms' },
+  { id: 't', label: 'Dictionary', slug: 'dictionary' },
   { id: 'a', label: 'Abbreviations', slug: 'abbreviations' },
-  { id: 'p', label: 'Prowords', slug: 'prowords' },
   { id: 's', label: 'Symbols', slug: 'symbols' },
+  { id: 'p', label: 'Prowords', slug: 'prowords' },
   { id: 'all', label: 'All', slug: 'all' },
 ].filter(t => t.id !== 's' || (symbolsRaw as unknown[]).length > 0) // tab shows only when symbols are included
 

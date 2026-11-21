@@ -3,11 +3,11 @@ import { highlight, type Entry } from '~/utils/dictionary'
 import { spaceOut } from '~/utils/formatMeaning'
 
 /**
- * compact: the two-column table used on the Abbreviations tab (abbreviation | full form).
- * Otherwise every kind of entry uses the same two-line row: name + type tag, then the
- * meaning (or full form) underneath. Used for All, Terms, Prowords, Saved and Recent.
+ * One entry as a card. Abbreviations show the word the user searched for on top (smaller,
+ * primary) and the abbreviation under it (bigger, mint green). Other entries show the name
+ * with a short preview of the meaning.
  */
-const props = defineProps<{ entry: Entry; words: string[]; showKind?: boolean; saved?: boolean; compact?: boolean }>()
+const props = defineProps<{ entry: Entry; words: string[]; showKind?: boolean; saved?: boolean; recent?: boolean }>()
 defineEmits<{ open: [entry: Entry] }>()
 
 const title = computed(() => (props.entry.kind === 'a' ? props.entry.abbr ?? '' : props.entry.headword))
@@ -28,66 +28,55 @@ const subtitle = computed(() => {
   return `…${text.slice(start + 1)}`
 })
 
-// Abbreviations: remarks from the abbreviations file, shown under the meaning
+// Abbreviations: the category (remarks column of the abbreviations file)
 const remarks = computed(() => props.entry.remarks?.join(' · ') ?? '')
 
-const TAG = {
-  t: { label: 'Term', cls: '' },
-  a: { label: 'Abbreviation', cls: '' },
-  p: { label: 'Proword', cls: '' },
-  s: { label: 'Symbol', cls: '' },
-}
+const TAG = { t: 'Dictionary', a: 'Abbreviation', p: 'Proword', s: 'Symbol' }
 const titleCls = {
-  t: 'font-serif text-[18px] font-semibold',
-  a: 'text-[16px] font-semibold text-abbr',
-  p: 'text-[15px] font-semibold tracking-[.03em]',
-  s: 'text-[16px] font-semibold',
+  t: 'text-[16.5px] font-bold',
+  a: '',
+  p: 'text-[15.5px] font-bold tracking-[.03em]',
+  s: 'text-[16px] font-bold',
 }
 </script>
 
 <template>
   <button
     type="button"
-    class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 pr-9 pl-4 text-left transition-colors active:bg-line/50"
-    :class="compact ? 'py-3' : 'py-3'"
+    class="mx-4 mb-2 flex w-[calc(100%-2rem)] cursor-pointer items-center gap-3 rounded-2xl bg-paper py-3 pr-3 pl-4 text-left shadow-card transition-colors active:bg-accent-soft"
     @click="$emit('open', entry)"
   >
-    <!-- Abbreviations tab: abbreviation | full form -->
-    <template v-if="compact && entry.kind === 'a'">
-      <span class="w-[5.75rem] flex-none self-start pt-px text-[15.5px] leading-snug font-semibold text-abbr wrap-title" v-html="highlight(entry.abbr ?? '', words)" />
-      <span class="min-w-0 flex-1">
-        <span class="block text-[15.5px] leading-snug wrap-title" v-html="highlight(entry.meaning, words)" />
-        <span v-if="remarks" class="mt-1 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
-      </span>
-    </template>
-
     <!-- Military symbol: the symbol from the document on a white tile -->
     <span
       v-if="entry.kind === 's' && entry.symbol"
-      class="grid h-12 w-16 flex-none place-items-center rounded-md border border-line bg-white p-1"
+      class="grid h-12 w-16 flex-none place-items-center rounded-xl border border-line bg-white p-1"
     >
       <img :src="entry.symbol.image" alt="" loading="lazy" class="block h-auto max-h-[38px] w-auto max-w-[54px] object-contain">
     </span>
 
-    <!-- Standard row -->
-    <span v-if="!(compact && entry.kind === 'a')" class="min-w-0 flex-1">
-      <span class="flex min-w-0 items-baseline gap-2">
-        <span class="min-w-0 leading-snug wrap-title" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
-        <span
-          v-if="showKind"
-          class="flex-none text-[12px] text-muted"
-          :class="TAG[entry.kind].cls"
-        >{{ TAG[entry.kind].label }}</span>
+    <!-- Abbreviation: word on top (smaller, primary), abbreviation below (bigger, mint green) -->
+    <span v-if="entry.kind === 'a'" class="min-w-0 flex-1">
+      <span class="flex min-w-0 items-start gap-2">
+        <span class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium text-ink wrap-title" v-html="highlight(entry.headword, words)" />
+        <span v-if="showKind" class="mt-px flex-none rounded-full bg-term-soft px-2 py-px text-[11px] font-medium text-muted">{{ TAG.a }}</span>
       </span>
-      <span
-        class="mt-0.5 text-[13.5px] leading-snug text-muted"
-        :class="entry.kind === 'a' ? 'line-clamp-1 text-ink/75' : 'line-clamp-2'"
-        v-html="entry.kind === 's' && !entry.meaning ? highlight(entry.symbol!.category + ' symbols', words) : highlight(subtitle, words)"
-      />
-      <span v-if="entry.kind === 'a' && remarks" class="mt-0.5 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
+      <span class="mt-0.5 block text-[21px] leading-tight font-bold tracking-[.01em] text-mint wrap-title" v-html="highlight(entry.abbr ?? '', words)" />
+      <span v-if="remarks" class="mt-1 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
     </span>
 
-    <span v-if="saved" class="flex-none text-brass"><AppIcon name="bookmark" :size="15" filled /></span>
-    <span class="flex-none text-faint"><AppIcon name="chevron-right" :size="16" /></span>
+    <!-- Other entries: name, then a preview of the meaning -->
+    <span v-else class="min-w-0 flex-1">
+      <span class="flex min-w-0 items-start gap-2">
+        <span class="min-w-0 flex-1 leading-snug wrap-title" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
+        <span v-if="showKind" class="mt-0.5 flex-none rounded-full bg-term-soft px-2 py-px text-[11px] font-medium text-muted">{{ TAG[entry.kind] }}</span>
+      </span>
+      <span
+        class="mt-0.5 line-clamp-2 text-[13.5px] leading-snug text-muted"
+        v-html="entry.kind === 's' && !entry.meaning ? highlight(entry.symbol!.category + ' symbols', words) : highlight(subtitle, words)"
+      />
+    </span>
+
+    <span v-if="saved" class="flex-none text-accent"><AppIcon name="bookmark" :size="18" filled /></span>
+    <span class="flex-none text-faint"><AppIcon :name="recent ? 'arrow-up-right' : 'chevron-right'" :size="17" /></span>
   </button>
 </template>

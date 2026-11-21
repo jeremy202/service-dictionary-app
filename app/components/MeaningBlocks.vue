@@ -40,7 +40,7 @@ function onClick(ev: MouseEvent) {
       <div v-else class="flex gap-3" :class="b.level === 2 ? 'mt-2 ml-9' : 'mt-4 first:mt-0'">
         <span
           v-if="b.level === 1"
-          class="w-6 flex-none pt-px text-right text-[15px] font-semibold text-ink/55 tabular-nums"
+          class="w-6 flex-none pt-px text-right text-[15px] font-bold text-accent tabular-nums"
         >{{ b.marker }}</span>
         <span v-else class="w-7 flex-none pt-px text-right text-[14px] text-muted tabular-nums">{{ b.marker }}</span>
         <div class="min-w-0 flex-1">

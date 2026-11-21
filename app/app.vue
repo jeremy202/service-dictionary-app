@@ -11,9 +11,9 @@ const payments = usePayments()
 /* ---------- Premium / payment page ---------- */
 const paywall = ref<null | 'launch' | 'limit' | 'menu'>(null)
 const premiumPill = computed(() => {
-  if (access.hasPlan.value) return { text: 'Premium', cls: 'border border-line text-ink/80' }
-  if (access.inTrial.value) return { text: `Trial · ${access.trialDaysLeft.value} days`, cls: 'border border-line text-muted' }
-  return { text: 'Premium', cls: 'bg-ink text-paper' }
+  if (access.hasPlan.value) return { text: 'Premium', cls: 'bg-white/15 text-on-header' }
+  if (access.inTrial.value) return { text: `Trial · ${access.trialDaysLeft.value} days`, cls: 'bg-white/15 text-on-header' }
+  return { text: 'Premium', cls: 'bg-sand text-on-sand' }
 })
 function onPaymentResult(r: { ok: boolean; error?: string }) {
   if (r.ok) { paywall.value = null; tap('medium'); notify('Payment successful. Premium unlocked') }
@@ -57,7 +57,9 @@ const searchPlaceholder = computed(() => ({
   browse: tab.value === 'all' ? 'Search everything…' : tab.value === 'a' ? 'Search abbreviations by word…' : `Search ${TABS.find(t => t.id === tab.value)!.label.toLowerCase()}…`,
   saved: 'Search saved entries…',
   recent: 'Search recent entries…',
+  manual: 'Search the manual…',
 })[view.value])
+const manualQuery = ref('')
 const savedList = computed(() => library.saved.value.filter(matchesSearch))
 const recentList = computed(() => library.recent.value.filter(matchesSearch))
 
@@ -129,6 +131,7 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
+const hasScrubber = computed(() => view.value === 'browse' && tab.value !== 's' && !query.value.trim() && results.value.length > 30)
 const scrubLetters = computed(() => ALPHABET.filter(l => l !== '#' || lettersAvailable.value.has('#')))
 async function jumpTo(letter: string) {
   tap()
@@ -171,8 +174,9 @@ function setView(v: View) {
   view.value = v
   nextTick(scrollTop)
 }
-const title = computed(() => ({ browse: 'Service Dictionary', saved: 'Saved', recent: 'Recent', manual: 'Manual' })[view.value])
+const title = computed(() => ({ browse: 'Service Guide', saved: 'Saved', recent: 'Recent', manual: 'Manual' })[view.value])
 const manual = useManual()
+const subtitle = computed(() => ({ browse: '', saved: 'Your bookmarked entries', recent: 'Entries you opened recently', manual: manual.state.value === 'open' ? 'Writing Manual' : 'Restricted · access code required' })[view.value])
 const manualView = ref<{ reading: number } | null>(null)
 
 /* ---------- toast ---------- */
@@ -198,6 +202,7 @@ onMounted(() => {
       if (paywall.value) paywall.value = null
       else if (stack.value.length) closeEntry()
       else if (view.value === 'manual' && manualView.value?.reading) manualView.value.reading = 0
+      else if (view.value === 'manual' && manualQuery.value) manualQuery.value = ''
       else if (input.value || searchFocused.value) cancelSearch()
       else if (view.value !== 'browse') setView('browse')
       else CapApp.minimizeApp()
@@ -224,129 +229,151 @@ onBeforeUnmount(() => observer?.disconnect())
 
 <template>
   <div class="flex h-dvh flex-col overflow-hidden bg-canvas text-ink">
-    <!-- ===== Top bar ===== -->
-    <header class="z-20 flex-none bg-canvas pt-[env(safe-area-inset-top)]" :class="view === 'manual' ? '' : 'border-b border-line/70'">
-      <div class="px-4 pt-2.5" :class="view === 'manual' ? 'pb-1' : 'pb-3'">
-        <div class="flex h-10 items-center gap-2.5">
-          <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none rounded-[6px]">
-          <h1 class="m-0 truncate font-serif font-semibold" :class="view === 'browse' ? 'text-[clamp(15px,5vw,21px)]' : 'text-[23px]'">{{ title }}</h1>
+    <!-- ===== Green header band ===== -->
+    <header class="z-20 flex-none rounded-b-[26px] bg-header pt-[env(safe-area-inset-top)] text-on-header shadow-lift">
+      <div class="px-4 pt-3" :class="view === 'manual' && manual.state.value !== 'open' ? 'pb-5' : 'pb-4'">
+        <!-- Dictionary: logo, name, premium -->
+        <div v-if="view === 'browse'" class="flex h-11 items-center gap-2.5">
+          <img src="/logo.svg" alt="" width="36" height="36" class="size-9 flex-none rounded-[9px] ring-1 ring-white/25">
+          <h1 class="m-0 min-w-0 truncate text-[clamp(17px,5.6vw,22px)] leading-tight font-bold tracking-[-.01em]">{{ title }}</h1>
           <span class="flex-1" />
           <button
-            v-if="view === 'recent' && library.recent.value.length"
-            type="button" class="cursor-pointer rounded-lg px-2 py-1 text-[15px] font-medium text-accent active:bg-line/50"
-            @click="library.clearRecent(); notify('History cleared')"
-          >Clear</button>
-          <span v-if="view === 'saved' && library.saved.value.length" class="text-[13px] text-muted tabular-nums">{{ library.saved.value.length }}</span>
-          <button
-            v-if="view === 'manual' && manual.state.value === 'open'"
-            type="button" class="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[15px] font-medium text-accent active:bg-line/50"
-            @click="manual.lock(); notify('Manual locked')"
-          ><AppIcon name="lock" :size="17" /> Lock</button>
-          <button
-            v-if="view === 'browse'"
             type="button"
-            class="flex h-7.5 flex-none cursor-pointer items-center gap-1 rounded-md px-2.5 text-[13px] font-medium whitespace-nowrap transition active:scale-95"
+            class="flex h-8 flex-none cursor-pointer items-center rounded-full px-3.5 text-[13px] font-semibold whitespace-nowrap transition active:scale-95"
             :class="premiumPill.cls"
             @click="paywall = 'menu'"
-          >
-            {{ premiumPill.text }}
-          </button>
+          >{{ premiumPill.text }}</button>
         </div>
 
-        <!-- Search (every tab except the manual, which has its own) -->
-          <div v-if="view !== 'manual'" class="mt-2.5 flex items-center gap-2">
-            <label class="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-line/55 px-3 text-muted transition-colors focus-within:bg-paper focus-within:ring-2 focus-within:ring-accent/35">
-              <AppIcon name="search" :size="18" />
-              <input
-                ref="searchEl"
-                :value="input"
-                type="search"
-                enterkeyhint="search"
-                :placeholder="searchPlaceholder"
-                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                aria-label="Search"
-                class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
-                @input="onSearchInput"
-                @focus="searchFocused = true"
-                @blur="searchFocused = false"
-                @keydown.enter="searchEl?.blur()"
-              >
-              <button v-if="input" type="button" class="grid size-6 flex-none cursor-pointer place-items-center rounded-full bg-muted/40 text-paper" aria-label="Clear" @click="input = ''; searchEl?.focus()">
-                <AppIcon name="x" :size="13" />
-              </button>
-            </label>
-            <button
-              v-if="searchFocused || input"
-              type="button"
-              class="flex-none cursor-pointer px-1 text-[16px] font-medium text-accent"
-              @mousedown.prevent
-              @click="cancelSearch"
-            >Cancel</button>
+        <!-- Saved, Recent, Manual: large title with a line under it -->
+        <div v-else class="flex items-end gap-2 pt-1">
+          <div class="min-w-0 flex-1">
+            <h1 class="m-0 text-[29px] leading-tight font-bold tracking-[-.01em]">{{ title }}</h1>
+            <p class="mt-0.5 mb-0 text-[13.5px] text-on-header/75">{{ subtitle }}</p>
           </div>
+          <button
+            v-if="view === 'recent' && library.recent.value.length"
+            type="button" class="mb-1 flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold active:bg-white/25"
+            @click="library.clearRecent(); notify('History cleared')"
+          ><AppIcon name="trash" :size="15" /> Clear</button>
+          <span v-if="view === 'saved' && library.saved.value.length" class="mb-1 flex h-8 items-center rounded-full bg-white/15 px-3 text-[13px] font-semibold tabular-nums">{{ library.saved.value.length }}</span>
+          <button
+            v-if="view === 'manual' && manual.state.value === 'open'"
+            type="button" class="mb-1 flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-full bg-white/15 px-3.5 text-[13px] font-semibold active:bg-white/25"
+            @click="manual.lock(); manualQuery = ''; notify('Manual locked')"
+          ><AppIcon name="lock" :size="15" /> Lock</button>
+        </div>
 
-          <!-- Filters (Dictionary tab); while searching they show how many matches each has -->
-          <div v-if="view === 'browse'" class="relative -mx-4 mt-3">
-            <div
-              ref="filterBar" role="tablist" aria-label="Sections"
-              class="no-scrollbar flex gap-2 overflow-x-auto scroll-smooth px-4"
-              @scroll.passive="updateFilterEdges"
+        <!-- Search: a white pill inside the band -->
+        <div v-if="view !== 'manual' || manual.state.value === 'open'" class="mt-3.5 flex items-center gap-2">
+          <label class="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-paper px-4 text-muted shadow-card transition focus-within:ring-3 focus-within:ring-sand/70">
+            <AppIcon name="search" :size="19" />
+            <input
+              v-if="view === 'manual'"
+              v-model="manualQuery"
+              type="search" enterkeyhint="search" :placeholder="searchPlaceholder"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+              aria-label="Search the manual"
+              class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
+              @keydown.enter="($event.target as HTMLInputElement).blur()"
             >
-              <button
-                v-for="f in FILTERS" :key="f.id" type="button" role="tab"
-                :aria-pressed="tab === f.id"
-                class="flex h-8 flex-none cursor-pointer items-center rounded-md border px-3.5 text-[14.5px] font-medium whitespace-nowrap transition-colors"
-                :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
-                @click="setFilter(f.id)"
-              >
-                {{ f.short }}
-              </button>
-              <span class="w-6 flex-none" aria-hidden="true" />
-            </div>
-            <!-- More filters to the left / right -->
+            <input
+              v-else
+              ref="searchEl"
+              :value="input"
+              type="search"
+              enterkeyhint="search"
+              :placeholder="searchPlaceholder"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+              aria-label="Search"
+              class="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
+              @input="onSearchInput"
+              @focus="searchFocused = true"
+              @blur="searchFocused = false"
+              @keydown.enter="searchEl?.blur()"
+            >
             <button
-              v-if="moreLeft" type="button" aria-label="Show earlier sections"
-              class="absolute inset-y-0 left-0 flex w-11 cursor-pointer items-center justify-start bg-gradient-to-r from-canvas from-45% to-transparent pl-1 text-ink/60"
-              @click="scrollFilters(-1)"
-            ><AppIcon name="chevron-left" :size="18" /></button>
-            <button
-              v-if="moreRight" type="button" aria-label="Show more sections"
-              class="absolute inset-y-0 right-0 flex w-14 cursor-pointer items-center justify-end bg-gradient-to-l from-canvas from-45% to-transparent pr-1.5 text-accent"
-              @click="scrollFilters(1)"
-            ><span class="grid size-7 place-items-center rounded-full border border-line bg-paper shadow-sm"><AppIcon name="chevron-right" :size="16" /></span></button>
-          </div>
+              v-if="view === 'manual' ? manualQuery : input" type="button"
+              class="grid size-6 flex-none cursor-pointer place-items-center rounded-full bg-muted/35 text-paper" aria-label="Clear"
+              @click="view === 'manual' ? (manualQuery = '') : (input = '', searchEl?.focus())"
+            >
+              <AppIcon name="x" :size="13" />
+            </button>
+          </label>
+          <button
+            v-if="view !== 'manual' && (searchFocused || input)"
+            type="button"
+            class="flex-none cursor-pointer px-1 text-[15.5px] font-semibold text-on-header"
+            @mousedown.prevent
+            @click="cancelSearch"
+          >Cancel</button>
+        </div>
       </div>
     </header>
 
+    <!-- Section chips (Dictionary tab), under the band -->
+    <div v-if="view === 'browse'" class="relative z-10 flex-none pt-3 pb-1.5">
+      <div
+        ref="filterBar" role="tablist" aria-label="Sections"
+        class="no-scrollbar flex gap-1.5 overflow-x-auto scroll-smooth px-4"
+        @scroll.passive="updateFilterEdges"
+      >
+        <button
+          v-for="f in FILTERS" :key="f.id" type="button" role="tab"
+          :aria-pressed="tab === f.id"
+          class="flex h-9 flex-none cursor-pointer items-center rounded-full px-4 text-[14.5px] whitespace-nowrap transition-colors"
+          :class="tab === f.id ? 'bg-accent font-semibold text-paper shadow-card' : 'font-medium text-ink/70 active:bg-line/60'"
+          @click="setFilter(f.id)"
+        >
+          {{ f.short }}
+        </button>
+        <span class="w-8 flex-none" aria-hidden="true" />
+      </div>
+      <!-- More sections to the left / right -->
+      <button
+        v-if="moreLeft" type="button" aria-label="Show earlier sections"
+        class="absolute top-3 bottom-1.5 left-0 flex w-11 cursor-pointer items-center justify-start bg-gradient-to-r from-canvas from-45% to-transparent pl-1 text-ink/60"
+        @click="scrollFilters(-1)"
+      ><AppIcon name="chevron-left" :size="18" /></button>
+      <button
+        v-if="moreRight" type="button" aria-label="Show more sections"
+        class="absolute top-3 right-0 bottom-1.5 flex w-14 cursor-pointer items-center justify-end bg-gradient-to-l from-canvas from-45% to-transparent pr-2 text-accent"
+        @click="scrollFilters(1)"
+      ><span class="grid size-7 place-items-center rounded-full bg-paper shadow-card"><AppIcon name="chevron-right" :size="16" /></span></button>
+    </div>
+
     <!-- ===== Manual (locked tab) ===== -->
-    <ManualView v-if="view === 'manual'" ref="manualView" />
+    <ManualView v-if="view === 'manual'" ref="manualView" :query="manualQuery" />
 
     <!-- ===== Content ===== -->
     <div v-show="view !== 'manual'" class="relative min-h-0 flex-1">
-      <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain">
+      <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain pt-2" :class="hasScrubber ? 'pr-6' : ''">
         <!-- Dictionary -->
         <template v-if="view === 'browse'">
           <button
             v-if="!access.unlimited.value"
             type="button"
-            class="flex w-full cursor-pointer items-center gap-3 border-b border-line bg-paper px-4 py-2.5 text-left"
+            class="mx-4 mb-3 flex w-[calc(100%-2rem)] cursor-pointer items-center gap-3 rounded-2xl bg-sand px-4 py-3 text-left text-on-sand"
             @click="paywall = 'menu'"
           >
-            <span class="min-w-0 flex-1 text-[13px] leading-snug text-ink/80">
-              <b class="font-semibold">{{ access.freeLeftToday.value }} free {{ access.freeLeftToday.value === 1 ? 'entry' : 'entries' }} left today.</b>
+            <span class="min-w-0 flex-1 text-[13px] leading-snug">
+              <b class="font-bold">{{ access.freeLeftToday.value }} free {{ access.freeLeftToday.value === 1 ? 'entry' : 'entries' }} left today.</b>
               Unlimited for {{ play.priceLabel('monthly') ?? '₦500' }} a month.
             </span>
-            <span class="flex-none text-[13.5px] font-semibold text-accent">Upgrade</span>
+            <span class="flex h-8 flex-none items-center rounded-full bg-accent px-3.5 text-[13px] font-semibold text-paper">Upgrade</span>
           </button>
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
-            :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} match, but ${fmt(matchCounts.all)} ${matchCounts.all === 1 ? 'entry' : 'entries'} in other sections ${matchCounts.all === 1 ? 'does' : 'do'}.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
+            :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} entries match, but ${fmt(matchCounts.all)} ${matchCounts.all === 1 ? 'entry' : 'entries'} in other sections ${matchCounts.all === 1 ? 'does' : 'do'}.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
           >
-            <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-sm bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
+            <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-full bg-accent px-5 py-2.5 text-[14.5px] font-semibold text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
             <div v-else-if="suggestions.length" class="mt-3 flex flex-wrap justify-center gap-2">
               <button
                 v-for="sg in suggestions" :key="sg" type="button"
-                class="cursor-pointer rounded-sm border border-accent/40 bg-paper px-4 py-1.5 text-[15px] font-medium text-accent active:bg-accent-soft"
+                class="cursor-pointer rounded-full bg-sand px-4 py-1.5 text-[15px] font-semibold text-on-sand active:opacity-80"
                 @click="useSuggestion(sg)"
               >{{ sg }}</button>
             </div>
@@ -354,7 +381,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <button
             v-if="query.trim() && results.length && otherMatches > 0"
             type="button"
-            class="flex w-full cursor-pointer items-center gap-2 border-b border-line bg-accent-soft/60 px-4 py-2 text-left text-[13.5px] text-ink/80 active:bg-accent-soft"
+            class="mx-4 mb-2 flex w-[calc(100%-2rem)] cursor-pointer items-center gap-2 rounded-2xl bg-accent-soft px-4 py-2.5 text-left text-[13.5px] text-ink/80 active:opacity-80"
             @click="setFilter('all')"
           >
             <span class="min-w-0 flex-1">{{ fmt(otherMatches) }} more {{ otherMatches === 1 ? 'match' : 'matches' }} in other sections</span>
@@ -363,19 +390,19 @@ onBeforeUnmount(() => observer?.disconnect())
           <template v-for="row in rows" :key="row.key">
             <template v-if="row.type === 'letter'">
               <div :id="`sec-${row.letter}`" />
-              <div class="sticky top-0 z-[1] border-b border-line/60 bg-canvas/95 px-4 py-1 font-serif text-[15px] font-semibold text-ink/60 backdrop-blur">
+              <div class="sticky top-0 z-[1] bg-canvas/95 px-5 pt-2.5 pb-1.5 text-[15px] font-bold text-accent backdrop-blur">
                 {{ row.letter }}
               </div>
             </template>
             <div
               v-else-if="row.type === 'label'"
-              class="sticky top-0 z-[1] flex items-baseline justify-between border-b border-line/60 bg-canvas/95 px-4 pt-3 pb-1.5 backdrop-blur"
+              class="sticky top-0 z-[1] flex items-baseline gap-1.5 bg-canvas/95 px-5 pt-2.5 pb-1.5 backdrop-blur"
             >
-              <span class="text-[12px] font-semibold tracking-wider text-muted uppercase">{{ row.label }}</span>
-              <span class="pr-1 text-[12px] text-muted tabular-nums">{{ fmt(row.count) }}</span>
+              <span class="text-[15px] font-bold">{{ row.label }}</span>
+              <span class="text-[13px] text-muted tabular-nums">({{ fmt(row.count) }})</span>
             </div>
             <EntryRow
-              v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'" :compact="tab === 'a'"
+              v-else :entry="row.entry" :words="highlightWords" :show-kind="tab === 'all'"
               :saved="library.isSaved(row.entry)" @open="openEntry"
             />
           </template>
@@ -385,14 +412,18 @@ onBeforeUnmount(() => observer?.disconnect())
         <template v-else-if="view === 'saved'">
           <EmptyState v-if="!library.saved.value.length" icon="bookmark" title="No saved entries" text="Tap the bookmark on any entry to keep it here for quick reference." />
           <EmptyState v-else-if="!savedList.length" icon="search" title="No matches" text="None of your saved entries match. Clear the search to see them all." />
-          <EntryRow v-for="e in savedList" :key="e.id" :entry="e" :words="highlightWords" show-kind @open="openEntry" />
+          <div v-else class="flex items-baseline gap-1.5 px-5 pt-2 pb-2">
+            <span class="text-[15px] font-bold">Saved entries</span>
+            <span class="text-[13px] text-muted tabular-nums">({{ savedList.length }})</span>
+          </div>
+          <EntryRow v-for="e in savedList" :key="e.id" :entry="e" :words="highlightWords" show-kind saved @open="openEntry" />
         </template>
 
         <!-- Recent -->
         <template v-else>
           <EmptyState v-if="!library.recent.value.length" icon="clock" title="Nothing yet" text="Entries you open will appear here so you can find them again." />
           <EmptyState v-else-if="!recentList.length" icon="search" title="No matches" text="None of your recent entries match. Clear the search to see them all." />
-          <EntryRow v-for="e in recentList" :key="e.id" :entry="e" :words="highlightWords" show-kind :saved="library.isSaved(e)" @open="openEntry" />
+          <EntryRow v-for="e in recentList" :key="e.id" :entry="e" :words="highlightWords" show-kind recent :saved="library.isSaved(e)" @open="openEntry" />
         </template>
 
         <div ref="sentinel" class="h-6" />
@@ -400,7 +431,7 @@ onBeforeUnmount(() => observer?.disconnect())
 
       <!-- A–Z index -->
       <IndexScrubber
-        v-if="view === 'browse' && tab !== 's' && !query.trim() && results.length > 30"
+        v-if="hasScrubber"
         class="absolute top-0 right-0 bottom-0 z-[2]"
         :letters="scrubLetters" :available="lettersAvailable" @jump="jumpTo"
       />
@@ -409,19 +440,19 @@ onBeforeUnmount(() => observer?.disconnect())
     <!-- ===== Bottom tab bar ===== -->
     <nav
       v-show="!searchFocused"
-      class="z-20 flex flex-none border-t border-line/80 bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
+      class="z-20 flex flex-none border-t border-line/70 bg-canvas pb-[env(safe-area-inset-bottom)]"
       aria-label="Sections"
     >
       <button
         v-for="t in ([['browse', 'Dictionary', 'book'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock'], ['manual', 'Manual', manual.state.value === 'open' ? 'manual' : 'lock']] as const)"
         :key="t[0]" type="button"
-        class="flex h-14 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors"
+        class="flex h-15 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors"
         :class="view === t[0] ? 'text-accent' : 'text-muted'"
         :aria-current="view === t[0] ? 'page' : undefined"
         @click="setView(t[0])"
       >
         <AppIcon :name="t[2]" :size="23" :filled="view === t[0]" />
-        <span class="text-[11.5px] font-medium">{{ t[1] }}</span>
+        <span class="text-[11.5px]" :class="view === t[0] ? 'font-bold' : 'font-medium'">{{ t[1] }}</span>
       </button>
     </nav>
 
@@ -447,7 +478,7 @@ onBeforeUnmount(() => observer?.disconnect())
     <Transition enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2" enter-active-class="transition duration-200" leave-active-class="transition duration-200">
       <div
         v-if="toast"
-        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-md bg-ink px-4 py-2 text-[14px] font-medium text-canvas shadow-lift"
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-4 py-2 text-[14px] font-semibold text-paper shadow-lift"
       >
         <AppIcon name="check" :size="15" />{{ toast }}
       </div>

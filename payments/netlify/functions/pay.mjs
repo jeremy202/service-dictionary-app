@@ -31,7 +31,7 @@ export default async (req) => {
         metadata: {
           app: APP_ID,
           plan: body.plan,
-          custom_fields: [{ display_name: 'Plan', variable_name: 'plan', value: `Service Dictionary ${plan.name}` }],
+          custom_fields: [{ display_name: 'Plan', variable_name: 'plan', value: `Service Guide ${plan.name}` }],
         },
       }),
     })

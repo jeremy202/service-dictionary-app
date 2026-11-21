@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
-/* Fonts are bundled with the app so it works fully offline.
-   IBM Plex Serif: headwords and titles. IBM Plex Sans: everything else. */
-@import "@fontsource/ibm-plex-serif/400.css";
-@import "@fontsource/ibm-plex-serif/600.css";
+/* Fonts are bundled with the app so it works fully offline (IBM Plex Sans throughout). */
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
 @import "@fontsource/ibm-plex-sans/600.css";
@@ -11,16 +8,16 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "IBM Plex Serif", Georgia, serif;
+  --font-serif: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; /* one clean sans face throughout */
   --font-mono: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; /* abbreviations use the text face */
 
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
-  --radius-2xl: 10px;
-  --radius-3xl: 12px;
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 22px;
 
   --color-canvas: var(--canvas);
   --color-paper: var(--paper);
@@ -42,57 +39,72 @@
   --color-abbr-soft: var(--abbr-soft);
   --color-pro: var(--pro);
   --color-pro-soft: var(--pro-soft);
+  --color-header: var(--header);
+  --color-on-header: var(--on-header);
+  --color-sand: var(--sand);
+  --color-on-sand: var(--on-sand);
+  --color-mint: var(--mint);
 
-  --shadow-card: none;
-  --shadow-lift: 0 1px 2px rgb(0 0 0 / .06);
+  --shadow-card: 0 1px 2px rgb(40 35 20 / .05), 0 2px 10px rgb(40 35 20 / .04);
+  --shadow-lift: 0 4px 16px rgb(20 40 28 / .14);
 }
 
-/* Black, grey and white, with one restrained accent (deep green) */
+/* Cream background, deep army green header, white cards and a warm sand accent */
 :root {
-  --canvas: #ffffff;
-  --paper: #ffffff;
-  --ink: #1b1b1b;
-  --muted: #666666;
-  --faint: #bdbdbd;
-  --line: #e6e6e6;
-  --accent: #2e5c45;
-  --accent-deep: #1f4232;
-  --accent-soft: #ebf1ed;
-  --highlight: #fbeba5;
-  --brass: #1b1b1b;
+  --canvas: #f6f2ea;
+  --paper: #fffdf9;
+  --ink: #1c2620;
+  --muted: #62675f;
+  --faint: #bfbab0;
+  --line: #e7e0d3;
+  --accent: #1f4d36;
+  --accent-deep: #163a28;
+  --accent-soft: #e4ece2;
+  --highlight: #f6e3a8;
+  --brass: #1f4d36;
   --on-brass: #ffffff;
   --danger: #9b2c2c;
   --danger-soft: #fbecea;
-  --term: #1b1b1b;
-  --term-soft: #f2f2f2;
-  --abbr: #2e5c45;
-  --abbr-soft: #ebf1ed;
-  --pro: #1b1b1b;
-  --pro-soft: #f2f2f2;
+  --term: #1c2620;
+  --term-soft: #efeae0;
+  --abbr: #1d8a62;
+  --abbr-soft: #e2f3ea;
+  --pro: #1c2620;
+  --pro-soft: #efeae0;
+  --header: #1f4d36;
+  --on-header: #ffffff;
+  --sand: #f0e3c6;
+  --on-sand: #4a3d1f;
+  --mint: #1d8a62;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #161616;
-    --paper: #1e1e1e;
-    --ink: #ebebe8;
-    --muted: #9a9a95;
-    --faint: #4a4a47;
-    --line: #2d2d2b;
-    --accent: #8cc6a5;
-    --accent-deep: #2e5c45;
-    --accent-soft: #213028;
+    --canvas: #111613;
+    --paper: #1a211d;
+    --ink: #e8ece6;
+    --muted: #9aa39b;
+    --faint: #47504a;
+    --line: #29322c;
+    --accent: #8fd0aa;
+    --accent-deep: #1f4d36;
+    --accent-soft: #1f2d25;
     --highlight: #4d4520;
-    --brass: #ebebe8;
-    --on-brass: #161616;
+    --brass: #8fd0aa;
+    --on-brass: #111613;
     --danger: #e59a91;
     --danger-soft: #3a2321;
-    --term: #ebebe8;
-    --term-soft: #262626;
-    --abbr: #8cc6a5;
-    --abbr-soft: #213028;
-    --pro: #ebebe8;
-    --pro-soft: #262626;
+    --term: #e8ece6;
+    --term-soft: #222a25;
+    --abbr: #6fdcae;
+    --abbr-soft: #1d3028;
+    --pro: #e8ece6;
+    --pro-soft: #222a25;
+    --header: #183a29;
+    --on-header: #f2f5f1;
+    --sand: #3a3324;
+    --on-sand: #efe0bd;
+    --mint: #6fdcae;
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * The locked "Manual" tab (Joint Service Writing Manual).
+ * The locked "Manual" tab (Writing Manual).
  *
  * The manual ships inside the app only in encrypted form (public/manual/*.bin, made by
  * scripts/build-manual.mjs). The access code is the key: it is never stored in the app,

@@ -90,7 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: play-${{ github.run_number }}
-          name: Service Dictionary for Google Play (version 1.0.${{ github.run_number }})
+          name: Service Guide for Google Play (version 1.0.${{ github.run_number }})
           body: |
             Signed bundle for Google Play (versionCode ${{ github.run_number }}).
 

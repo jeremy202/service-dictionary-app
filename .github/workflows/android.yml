@@ -58,9 +58,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Service Dictionary (Android test build ${{ github.run_number }})
+          name: Service Guide (Android test build ${{ github.run_number }})
           body: |
-            Android test build of Service Dictionary.
+            Android test build of Service Guide.
 
             **To install on your Android phone:** download the `.apk` file below on the phone, open it, and allow installing from this source when asked.
           files: dist-apk/*.apk

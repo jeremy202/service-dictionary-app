@@ -51,114 +51,113 @@ async function copy() {
   tap()
 }
 async function share() {
-  const ok = await shareText(props.entry.kind === 'a' ? props.entry.abbr ?? '' : props.entry.headword, `${plain.value}\n\n— Service Dictionary`)
+  const ok = await shareText(props.entry.kind === 'a' ? props.entry.abbr ?? '' : props.entry.headword, `${plain.value}\n\n— Service Guide`)
   if (!ok) copy()
 }
 
-const kindChip = { t: '', a: '', p: '' }
 const body = ref<HTMLElement>()
 watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
 </script>
 
 <template>
-  <div class="fixed inset-0 z-30 flex flex-col bg-canvas">
-    <!-- Top bar -->
-    <header class="flex-none border-b border-line/60 bg-canvas/95 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div class="flex h-13 items-center gap-1 px-1.5">
-        <button type="button" class="flex h-11 cursor-pointer items-center gap-0.5 rounded-xl pr-3 pl-1 text-[16px] font-medium text-accent active:bg-line/50" @click="emit('close')">
+  <div class="fixed inset-0 z-30 flex flex-col bg-header">
+    <!-- Green top bar -->
+    <header class="flex-none pt-[env(safe-area-inset-top)] text-on-header">
+      <div class="flex h-14 items-center gap-1 px-1.5 pb-1">
+        <button type="button" class="flex h-11 cursor-pointer items-center gap-0.5 rounded-xl pr-3 pl-1 text-[16px] font-semibold active:bg-white/10" @click="emit('close')">
           <AppIcon name="chevron-left" :size="24" />
           {{ canGoBack ? 'Back' : 'Close' }}
         </button>
         <div class="flex-1" />
         <button
           type="button"
-          class="grid size-11 cursor-pointer place-items-center rounded-xl active:bg-line/50"
-          :class="saved ? 'text-brass' : 'text-ink/80'"
+          class="grid size-11 cursor-pointer place-items-center rounded-xl active:bg-white/10"
           :aria-label="saved ? 'Remove from saved' : 'Save'"
           @click="emit('toggle-save')"
         >
           <AppIcon name="bookmark" :filled="saved" />
         </button>
-        <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl text-ink/80 active:bg-line/50" aria-label="Share" @click="share">
+        <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl active:bg-white/10" aria-label="Share" @click="share">
           <AppIcon name="share" />
         </button>
-        <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl text-ink/80 active:bg-line/50" aria-label="Copy" @click="copy">
+        <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl active:bg-white/10" aria-label="Copy" @click="copy">
           <AppIcon name="copy" />
         </button>
       </div>
     </header>
 
-    <!-- Content -->
-    <div ref="body" class="flex-1 overflow-y-auto overscroll-contain">
+    <!-- Content sheet -->
+    <div ref="body" class="flex-1 overflow-y-auto overscroll-contain rounded-t-[26px] bg-canvas">
       <article class="mx-auto max-w-2xl px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+3rem)]">
-        <span class="inline-block text-[12.5px] font-medium tracking-[.06em] text-muted uppercase" :class="kindChip[entry.kind]">
-          {{ KIND_LABEL[entry.kind] }}
-        </span>
-
         <template v-if="entry.kind === 'a'">
-          <h1 class="mt-2 mb-0 text-[34px] leading-tight font-semibold text-abbr wrap-title">{{ entry.abbr }}</h1>
-          <p class="mt-1 mb-0 font-serif text-[24px] leading-snug wrap-title">{{ entry.headword }}</p>
+          <!-- The word (what was searched for) on top, the abbreviation (the result) below -->
+          <p class="m-0 text-[21px] leading-snug font-semibold text-ink wrap-title">{{ entry.headword }}</p>
+          <h1 class="mt-1 mb-0 text-[40px] leading-[1.1] font-bold tracking-[.01em] text-mint wrap-title">{{ entry.abbr }}</h1>
         </template>
-        <h1 v-else-if="entry.kind === 'p'" class="mt-2 mb-0 text-[26px] leading-snug font-semibold tracking-[.03em] wrap-title">{{ entry.headword }}</h1>
+        <h1 v-else-if="entry.kind === 'p'" class="m-0 text-[28px] leading-snug font-bold tracking-[.03em] wrap-title">{{ entry.headword }}</h1>
         <template v-else-if="entry.kind === 's' && entry.symbol">
-          <div class="mt-4 grid min-h-44 place-items-center rounded-lg border border-line bg-white px-6 py-8">
+          <div class="grid min-h-44 place-items-center rounded-2xl bg-white px-6 py-8 shadow-card">
             <img :src="entry.symbol.image" :alt="entry.headword" class="max-h-40 max-w-full object-contain">
           </div>
-          <h1 class="mt-5 mb-0 font-serif text-[28px] leading-tight font-semibold wrap-title">{{ entry.headword }}</h1>
+          <h1 class="mt-5 mb-0 text-[28px] leading-tight font-bold wrap-title">{{ entry.headword }}</h1>
           <p class="mt-1 mb-0 text-[14px] text-muted">{{ entry.symbol.category }} symbols · No. {{ entry.symbol.serial }}</p>
         </template>
-        <h1 v-else class="mt-2 mb-0 font-serif text-[clamp(24px,7.4vw,30px)] leading-tight font-semibold wrap-title">{{ entry.headword }}</h1>
+        <h1 v-else class="m-0 text-[clamp(26px,8vw,34px)] leading-tight font-bold tracking-[-.01em] wrap-title">{{ entry.headword }}</h1>
 
-        <div class="my-5 h-px w-full bg-line" />
+        <span class="mt-3 inline-flex rounded-full bg-sand px-3 py-1 text-[12.5px] font-semibold text-on-sand">
+          {{ entry.kind === 't' ? 'Dictionary' : KIND_LABEL[entry.kind] }}
+        </span>
+
+        <div class="h-5" />
 
         <!-- Cross reference ("See 'Echelon'") -->
         <button
           v-if="xref"
           type="button"
-          class="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-line bg-paper px-4 py-3.5 text-left shadow-card active:bg-line/40"
+          class="flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-paper px-4 py-3.5 text-left shadow-card active:bg-accent-soft"
           @click="xrefEntry ? emit('open', xrefEntry) : emit('lookup', xref!)"
         >
           <span class="min-w-0 flex-1">
             <span class="block text-[12px] font-semibold tracking-wider text-muted uppercase">{{ entry.meaning.trim().split(/\s/)[0] }}</span>
-            <span class="block font-serif text-[21px] font-semibold wrap-title">{{ xref }}</span>
+            <span class="block text-[21px] font-bold wrap-title">{{ xref }}</span>
           </span>
           <span class="text-accent"><AppIcon name="arrow-right" /></span>
         </button>
 
         <!-- Symbol remarks: a drawing (Air Force variants) or text, exactly as in the document -->
         <section v-else-if="entry.kind === 's' && entry.symbol">
-          <h2 class="mb-2 text-[12px] font-semibold tracking-wider text-muted uppercase">Remarks</h2>
-          <div v-if="entry.symbol.remarkImage" class="grid place-items-center rounded-lg border border-line bg-white px-6 py-6">
+          <h2 class="mt-0 mb-2 text-[15px] font-bold">Remarks</h2>
+          <div v-if="entry.symbol.remarkImage" class="grid place-items-center rounded-2xl bg-white px-6 py-6 shadow-card">
             <img :src="entry.symbol.remarkImage" :alt="entry.meaning" class="max-h-36 max-w-full object-contain">
           </div>
-          <p v-else-if="entry.meaning" lang="en" class="m-0 text-justify text-[16.5px] leading-[1.75] text-ink/90 select-text [hyphens:auto]">{{ entry.meaning }}</p>
+          <p v-else-if="entry.meaning" lang="en" class="m-0 rounded-2xl bg-paper px-4 py-3.5 text-justify text-[16px] leading-[1.7] text-ink/90 shadow-card select-text [hyphens:auto]">{{ entry.meaning }}</p>
           <p v-else class="m-0 text-[15px] text-muted">None</p>
         </section>
 
         <MeaningBlocks
           v-else-if="entry.kind !== 'a'" :meaning="entry.meaning" :entry="entry"
-          class="text-[16.5px] leading-[1.75] text-ink/90 select-text"
+          class="rounded-2xl bg-paper px-4 py-4 text-[16.5px] leading-[1.75] text-ink/90 shadow-card select-text"
           @open="emit('open', $event)"
         />
 
-        <!-- Abbreviations: remarks column of the abbreviations file -->
+        <!-- Abbreviations: category (remarks column of the abbreviations file) -->
         <section v-if="entry.kind === 'a' && entry.remarks?.length" class="mb-6">
-          <h2 class="mb-2 text-[12px] font-semibold tracking-wider text-muted uppercase">Remarks</h2>
-          <ul class="m-0 list-none space-y-1.5 p-0">
+          <h2 class="mt-0 mb-2 text-[15px] font-bold">Category</h2>
+          <ul class="m-0 list-none space-y-2 p-0">
             <li
               v-for="r in entry.remarks" :key="r"
-              class="rounded-md border border-line bg-paper px-3 py-2 text-[14.5px] leading-snug text-ink/85 [overflow-wrap:break-word]"
+              class="rounded-2xl bg-paper px-4 py-3 text-[15px] leading-snug text-ink/85 shadow-card [overflow-wrap:break-word]"
             >{{ r }}</li>
           </ul>
         </section>
 
         <!-- Abbreviation extras -->
         <section v-if="otherMeanings.length" class="mt-2">
-          <h2 class="mb-2 text-[12px] font-semibold tracking-wider text-muted uppercase">Also stands for</h2>
-          <div class="overflow-hidden rounded-2xl border border-line bg-paper shadow-card">
+          <h2 class="mt-0 mb-2 text-[15px] font-bold">Also stands for</h2>
+          <div class="overflow-hidden rounded-2xl bg-paper shadow-card">
             <button
               v-for="o in otherMeanings" :key="o.id" type="button"
-              class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 px-4 py-3 text-left last:border-b-0 active:bg-line/40"
+              class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 px-4 py-3 text-left last:border-b-0 active:bg-accent-soft"
               @click="emit('open', o)"
             >
               <span class="min-w-0 flex-1 text-[15.5px] wrap-title">{{ o.headword }}</span>
@@ -167,11 +166,11 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
           </div>
         </section>
         <section v-if="otherAbbrs.length" class="mt-6">
-          <h2 class="mb-2 text-[12px] font-semibold tracking-wider text-muted uppercase">Also written as</h2>
+          <h2 class="mt-0 mb-2 text-[15px] font-bold">Also written as</h2>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="o in otherAbbrs" :key="o.id" type="button"
-              class="cursor-pointer rounded-md border border-line bg-paper px-3 py-1.5 text-[14.5px] font-semibold text-abbr active:opacity-70"
+              class="cursor-pointer rounded-full bg-abbr-soft px-4 py-1.5 text-[15px] font-bold text-mint active:opacity-70"
               @click="emit('open', o)"
             >{{ o.abbr }}</button>
           </div>

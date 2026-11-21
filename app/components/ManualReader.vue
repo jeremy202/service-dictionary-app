@@ -166,20 +166,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-30 flex flex-col bg-[#e9e9e7] dark:bg-[#0f0f0f]">
+  <div class="fixed inset-0 z-30 flex flex-col bg-[#e7e1d5] dark:bg-[#0c100e]">
     <!-- Top bar -->
-    <header class="flex-none border-b border-line/60 bg-canvas/95 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div class="flex h-13 items-center gap-1 px-1.5">
-        <button type="button" class="flex h-11 cursor-pointer items-center gap-0.5 rounded-xl pr-3 pl-1 text-[16px] font-medium text-accent active:bg-line/50" @click="emit('close')">
+    <header class="flex-none rounded-b-3xl bg-header pt-[env(safe-area-inset-top)] text-on-header shadow-lift">
+      <div class="flex h-14 items-center gap-1 px-1.5 pb-1">
+        <button type="button" class="flex h-11 cursor-pointer items-center gap-0.5 rounded-xl pr-3 pl-1 text-[16px] font-medium text-on-header active:bg-white/10" @click="emit('close')">
           <AppIcon name="chevron-left" :size="24" />
           Contents
         </button>
         <div class="min-w-0 flex-1 text-center">
-          <div class="truncate text-[13px] font-semibold text-ink/80">{{ sectionLabel }}</div>
+          <div class="truncate text-[13px] font-semibold text-on-header/85">{{ sectionLabel }}</div>
         </div>
         <button
           type="button"
-          class="h-9 cursor-pointer rounded-md border border-line bg-paper px-2.5 text-[13.5px] font-semibold text-ink tabular-nums active:bg-line/50"
+          class="h-9 cursor-pointer rounded-full bg-white/15 px-3 text-[13.5px] font-semibold text-on-header tabular-nums active:bg-white/25"
           aria-label="Go to page"
           @click="openJump"
         >{{ current }} / {{ total || '…' }}</button>
@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
       <div v-else class="py-2" :style="{ width: `${pageW + 16}px` }">
         <div
           v-for="n in total" :key="n"
-          class="mx-2 overflow-hidden bg-white shadow-sm"
+          class="mx-2 overflow-hidden rounded-md bg-white shadow-card"
           :style="{ width: `${pageW}px`, height: `${pageH}px`, marginBottom: `${GAP}px` }"
         >
           <canvas :ref="el => setCanvas(n, el as Element | null)" :data-page="n" class="block size-full" />
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Bottom bar -->
-    <footer class="flex flex-none items-center justify-between border-t border-line/60 bg-canvas/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+.5rem)] backdrop-blur-xl">
+    <footer class="flex flex-none items-center justify-between border-t border-line/70 bg-canvas/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+.5rem)] backdrop-blur-xl">
       <div class="flex items-center gap-1">
         <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl text-ink/80 active:bg-line/50 disabled:opacity-30" :disabled="current <= 1" aria-label="Previous page" @click="goTo(current - 1, true)">
           <AppIcon name="chevron-left" />
