@@ -10,4 +10,15 @@
     <path d="M549.4 564.6 C591.0 537.6 649.3 527.2 713.8 537.6 M549.4 627.0 C591.0 600.0 649.3 589.6 713.8 600.0 M549.4 689.4 C591.0 662.4 649.3 652.0 713.8 662.4" stroke="#2e5c45" stroke-opacity=".14" stroke-width="10.4" fill="none" stroke-linecap="round"/>
     <path d="M395.5 325.4 L512.0 256.8 L628.5 325.4" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     <path d="M395.5 385.8 L512.0 317.1 L628.5 385.8" stroke="url(#brass)" stroke-width="39.5" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
-    </svg>
+    
+    <g transform="translate(539.0 633.3) rotate(138) scale(1.040)" stroke-linejoin="round">
+      <g fill="url(#brass)" stroke="#2e5c45" stroke-width="20" paint-order="stroke">
+        <rect x="-345" y="-30" width="575" height="60" rx="30"/>
+        <path d="M222 -24 L268 -24 L352 0 L268 24 L222 24 Z"/>
+      </g>
+      <path d="M268 -24 L352 0 L268 24 Z" fill="#f5f2ea"/>
+      <path d="M272 0 L340 0" stroke="#2e5c45" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="284" cy="0" r="6" fill="#2e5c45"/>
+      <path d="M-200 -30 L-200 30 M150 -30 L150 30" stroke="#2e5c45" stroke-opacity=".55" stroke-width="7"/>
+      <rect x="-320" y="-50" width="150" height="18" rx="9" fill="url(#brass)" stroke="#2e5c45" stroke-width="9" paint-order="stroke"/>
+    </g></svg>

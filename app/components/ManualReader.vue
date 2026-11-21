@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-30 flex flex-col bg-[#e7e1d5] dark:bg-[#0c100e]">
+  <div class="fixed inset-x-0 top-0 bottom-[var(--nav-h)] z-30 flex flex-col bg-[#e7e1d5] dark:bg-[#0c100e]">
     <!-- Top bar -->
     <header class="flex-none rounded-b-3xl bg-header pt-[env(safe-area-inset-top)] text-on-header shadow-lift">
       <div class="flex h-14 items-center gap-1 px-1.5 pb-1">
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Bottom bar -->
-    <footer class="flex flex-none items-center justify-between border-t border-line/70 bg-canvas/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+.5rem)] backdrop-blur-xl">
+    <footer class="flex flex-none items-center justify-between border-t border-line/70 bg-canvas/95 px-3 pt-2 pb-2 backdrop-blur-xl">
       <div class="flex items-center gap-1">
         <button type="button" class="grid size-11 cursor-pointer place-items-center rounded-xl text-ink/80 active:bg-line/50 disabled:opacity-30" :disabled="current <= 1" aria-label="Previous page" @click="goTo(current - 1, true)">
           <AppIcon name="chevron-left" />

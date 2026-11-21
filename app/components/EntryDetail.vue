@@ -60,7 +60,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
 </script>
 
 <template>
-  <div class="fixed inset-0 z-30 flex flex-col bg-header">
+  <div class="fixed inset-x-0 top-0 bottom-[var(--nav-h)] z-30 flex flex-col bg-header">
     <!-- Green top bar -->
     <header class="flex-none pt-[env(safe-area-inset-top)] text-on-header">
       <div class="flex h-14 items-center gap-1 px-1.5 pb-1">
@@ -88,7 +88,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
 
     <!-- Content sheet -->
     <div ref="body" class="flex-1 overflow-y-auto overscroll-contain rounded-t-[26px] bg-canvas">
-      <article class="mx-auto max-w-2xl px-5 pt-6 pb-[calc(env(safe-area-inset-bottom)+3rem)]">
+      <article class="mx-auto max-w-2xl px-5 pt-6 pb-10">
         <template v-if="entry.kind === 'a'">
           <!-- The word (what was searched for) on top, the abbreviation (the result) below -->
           <p class="m-0 text-[21px] leading-snug font-semibold text-ink wrap-title">{{ entry.headword }}</p>

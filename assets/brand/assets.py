@@ -14,10 +14,10 @@ def splash(bg, ink, sub, badge, out):
     if badge: b=b.replace('fill="#1b1b1b"','fill="'+badge[0]+'"').replace('fill="#f5f2ea"','fill="'+badge[1]+'"')
     html=FONTS+f'''<body style="width:2732px;height:2732px;background:{bg};display:flex;flex-direction:column;align-items:center;justify-content:center">
     <div>{b}</div>
-    <div style="font-family:F;font-weight:600;font-size:104px;color:{ink};margin-top:64px">Service Dictionary</div>
-    <div style="font-family:I;font-weight:500;font-size:34px;letter-spacing:2px;color:{sub};margin-top:22px">Terms · Abbreviations · Prowords</div>
+    <div style="font-family:F;font-weight:700;font-size:110px;color:{ink};margin-top:64px">Service Guide</div>
+    <div style="font-family:I;font-weight:500;font-size:34px;letter-spacing:2px;color:{sub};margin-top:22px">Dictionary · Abbreviations · Symbols · Prowords</div>
     </body>'''
     render(html,out,2732,2732)
-splash('#ffffff','#1b1b1b','#666666',None,'splash.png')
-splash('#161616','#ebebe8','#9a9a95',None,'splash-dark.png')
+splash('#f6f2ea','#1c2620','#62675f',None,'splash.png')
+splash('#111613','#e8ece6','#9aa39b',None,'splash-dark.png')
 print('ok')

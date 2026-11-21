@@ -51,6 +51,7 @@
 
 /* Cream background, deep army green header, white cards and a warm sand accent */
 :root {
+  --nav-h: calc(3.75rem + env(safe-area-inset-bottom)); /* footer tab bar */
   --canvas: #f6f2ea;
   --paper: #fffdf9;
   --ink: #1c2620;

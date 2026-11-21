@@ -88,8 +88,11 @@ function updateFilterEdges() {
   moreRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
 }
 function showActiveFilter() {
-  const el = filterBar.value?.querySelector<HTMLElement>('[aria-pressed="true"]')
-  el?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' })
+  const bar = filterBar.value
+  const el = bar?.querySelector<HTMLElement>('[aria-pressed="true"]')
+  if (!bar || !el) return
+  // Centre the active chip so it never sits under the edge arrows
+  bar.scrollTo({ left: Math.max(0, el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2), behavior: 'smooth' })
 }
 function scrollFilters(dir: 1 | -1) {
   filterBar.value?.scrollBy({ left: dir * Math.max(140, (filterBar.value.clientWidth ?? 300) * 0.6), behavior: 'smooth' })
@@ -172,7 +175,19 @@ function toggleSave() {
 function setView(v: View) {
   if (view.value === v) { scrollTop(); return }
   view.value = v
-  nextTick(scrollTop)
+  nextTick(() => {
+    scrollTop()
+    if (v === 'browse') { showActiveFilter(); updateFilterEdges() } // the chip row is rebuilt: bring the active chip into view
+  })
+}
+// Footer tabs: close any open entry page or manual page first; tapping Home again
+// (with nothing open) clears the search and returns to the top of the list.
+function navTo(v: View) {
+  const hadOverlay = stack.value.length > 0 || !!manualView.value?.reading
+  stack.value = []
+  if (manualView.value?.reading) manualView.value.reading = 0
+  if (v === view.value && !hadOverlay && v === 'browse' && (input.value || query.value)) cancelSearch()
+  setView(v)
 }
 const title = computed(() => ({ browse: 'Service Guide', saved: 'Saved', recent: 'Recent', manual: 'Manual' })[view.value])
 const manual = useManual()
@@ -245,6 +260,16 @@ onBeforeUnmount(() => observer?.disconnect())
           >{{ premiumPill.text }}</button>
         </div>
 
+        <!-- Which section the search is in -->
+        <button
+          v-if="view === 'browse'" type="button"
+          class="mt-2 flex cursor-pointer items-center gap-2 text-[13px] text-on-header/80"
+          @click="showActiveFilter()"
+        >
+          Searching in
+          <span class="rounded-full bg-sand px-2.5 py-0.5 text-[12.5px] font-bold text-on-sand">{{ tab === 'all' ? 'All sections' : FILTERS.find(f => f.id === tab)!.label }}</span>
+        </button>
+
         <!-- Saved, Recent, Manual: large title with a line under it -->
         <div v-else class="flex items-end gap-2 pt-1">
           <div class="min-w-0 flex-1">
@@ -265,7 +290,7 @@ onBeforeUnmount(() => observer?.disconnect())
         </div>
 
         <!-- Search: a white pill inside the band -->
-        <div v-if="view !== 'manual' || manual.state.value === 'open'" class="mt-3.5 flex items-center gap-2">
+        <div v-if="view !== 'manual' || manual.state.value === 'open'" class="flex items-center gap-2" :class="view === 'browse' ? 'mt-2.5' : 'mt-3.5'">
           <label class="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-paper px-4 text-muted shadow-card transition focus-within:ring-3 focus-within:ring-sand/70">
             <AppIcon name="search" :size="19" />
             <input
@@ -438,18 +463,18 @@ onBeforeUnmount(() => observer?.disconnect())
     </div>
 
     <!-- ===== Bottom tab bar ===== -->
+    <!-- Always on screen, above entry pages and the manual reader, so Home is one tap away -->
     <nav
-      v-show="!searchFocused"
-      class="z-20 flex flex-none border-t border-line/70 bg-canvas pb-[env(safe-area-inset-bottom)]"
+      class="relative z-[35] flex h-[var(--nav-h)] flex-none border-t border-line/70 bg-canvas pb-[env(safe-area-inset-bottom)]"
       aria-label="Sections"
     >
       <button
-        v-for="t in ([['browse', 'Dictionary', 'book'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock'], ['manual', 'Manual', manual.state.value === 'open' ? 'manual' : 'lock']] as const)"
+        v-for="t in ([['browse', 'Home', 'home'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock'], ['manual', 'Manual', manual.state.value === 'open' ? 'manual' : 'lock']] as const)"
         :key="t[0]" type="button"
         class="flex h-15 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors"
         :class="view === t[0] ? 'text-accent' : 'text-muted'"
         :aria-current="view === t[0] ? 'page' : undefined"
-        @click="setView(t[0])"
+        @click="navTo(t[0])"
       >
         <AppIcon :name="t[2]" :size="23" :filled="view === t[0]" />
         <span class="text-[11.5px]" :class="view === t[0] ? 'font-bold' : 'font-medium'">{{ t[1] }}</span>

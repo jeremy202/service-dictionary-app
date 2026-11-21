@@ -1,4 +1,4 @@
-# Generates the Service Dictionary logo mark in a few lockups.
+# Generates the Service Guide logo mark in a few lockups.
 GREEN_TOP = '#2e5c45'; GREEN_BOT = '#2e5c45'; BRASS = '#d9d0b8'; BRASS_DEEP = '#d9d0b8'; CREAM = '#f5f2ea'
 
 def emblem(cx=512, cy=540, s=1.0):
@@ -17,7 +17,22 @@ def emblem(cx=512, cy=540, s=1.0):
     <path d="M{P(400,326)} L{P(512,260)} L{P(624,326)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     <path d="M{P(400,384)} L{P(512,318)} L{P(624,384)}" stroke="url(#brass)" stroke-width="{sw:.1f}" fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10"/>
     '''
-    return book
+    # Pen crossing the book diagonally, from top right (cap) to bottom left (nib).
+    # Drawn pointing right, then rotated; a green outline keeps it clear of book and background.
+    cx0, cy0 = P(538, 622).split()
+    pen = f'''
+    <g transform="translate({cx0} {cy0}) rotate(138) scale({s:.3f})" stroke-linejoin="round">
+      <g fill="url(#brass)" stroke="{GREEN_BOT}" stroke-width="20" paint-order="stroke">
+        <rect x="-345" y="-30" width="575" height="60" rx="30"/>
+        <path d="M222 -24 L268 -24 L352 0 L268 24 L222 24 Z"/>
+      </g>
+      <path d="M268 -24 L352 0 L268 24 Z" fill="{CREAM}"/>
+      <path d="M272 0 L340 0" stroke="{GREEN_BOT}" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="284" cy="0" r="6" fill="{GREEN_BOT}"/>
+      <path d="M-200 -30 L-200 30 M150 -30 L150 30" stroke="{GREEN_BOT}" stroke-opacity=".55" stroke-width="7"/>
+      <rect x="-320" y="-50" width="150" height="18" rx="9" fill="url(#brass)" stroke="{GREEN_BOT}" stroke-width="9" paint-order="stroke"/>
+    </g>'''
+    return book + pen
 
 DEFS = f'''<defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{GREEN_TOP}"/><stop offset="1" stop-color="{GREEN_BOT}"/></linearGradient>
