@@ -20,7 +20,7 @@ function onPaymentResult(r: { ok: boolean; error?: string }) {
   else if (r.error) notify(r.error)
 }
 
-type View = 'browse' | 'saved' | 'recent'
+type View = 'browse' | 'saved' | 'recent' | 'manual'
 const view = ref<View>('browse')
 const fmt = (n: number) => n.toLocaleString('en-US')
 
@@ -171,7 +171,9 @@ function setView(v: View) {
   view.value = v
   nextTick(scrollTop)
 }
-const title = computed(() => ({ browse: 'Service Dictionary', saved: 'Saved', recent: 'Recent' })[view.value])
+const title = computed(() => ({ browse: 'Service Dictionary', saved: 'Saved', recent: 'Recent', manual: 'Manual' })[view.value])
+const manual = useManual()
+const manualView = ref<{ reading: number } | null>(null)
 
 /* ---------- toast ---------- */
 const toast = ref('')
@@ -195,6 +197,7 @@ onMounted(() => {
     CapApp.addListener('backButton', () => {
       if (paywall.value) paywall.value = null
       else if (stack.value.length) closeEntry()
+      else if (view.value === 'manual' && manualView.value?.reading) manualView.value.reading = 0
       else if (input.value || searchFocused.value) cancelSearch()
       else if (view.value !== 'browse') setView('browse')
       else CapApp.minimizeApp()
@@ -222,8 +225,8 @@ onBeforeUnmount(() => observer?.disconnect())
 <template>
   <div class="flex h-dvh flex-col overflow-hidden bg-canvas text-ink">
     <!-- ===== Top bar ===== -->
-    <header class="z-20 flex-none border-b border-line/70 bg-canvas pt-[env(safe-area-inset-top)]">
-      <div class="px-4 pt-2.5 pb-3">
+    <header class="z-20 flex-none bg-canvas pt-[env(safe-area-inset-top)]" :class="view === 'manual' ? '' : 'border-b border-line/70'">
+      <div class="px-4 pt-2.5" :class="view === 'manual' ? 'pb-1' : 'pb-3'">
         <div class="flex h-10 items-center gap-2.5">
           <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none rounded-[6px]">
           <h1 class="m-0 truncate font-serif font-semibold" :class="view === 'browse' ? 'text-[clamp(15px,5vw,21px)]' : 'text-[23px]'">{{ title }}</h1>
@@ -235,6 +238,11 @@ onBeforeUnmount(() => observer?.disconnect())
           >Clear</button>
           <span v-if="view === 'saved' && library.saved.value.length" class="text-[13px] text-muted tabular-nums">{{ library.saved.value.length }}</span>
           <button
+            v-if="view === 'manual' && manual.state.value === 'open'"
+            type="button" class="flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[15px] font-medium text-accent active:bg-line/50"
+            @click="manual.lock(); notify('Manual locked')"
+          ><AppIcon name="lock" :size="17" /> Lock</button>
+          <button
             v-if="view === 'browse'"
             type="button"
             class="flex h-7.5 flex-none cursor-pointer items-center gap-1 rounded-md px-2.5 text-[13px] font-medium whitespace-nowrap transition active:scale-95"
@@ -245,8 +253,8 @@ onBeforeUnmount(() => observer?.disconnect())
           </button>
         </div>
 
-        <!-- Search (every tab) -->
-          <div class="mt-2.5 flex items-center gap-2">
+        <!-- Search (every tab except the manual, which has its own) -->
+          <div v-if="view !== 'manual'" class="mt-2.5 flex items-center gap-2">
             <label class="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-line/55 px-3 text-muted transition-colors focus-within:bg-paper focus-within:ring-2 focus-within:ring-accent/35">
               <AppIcon name="search" :size="18" />
               <input
@@ -309,8 +317,11 @@ onBeforeUnmount(() => observer?.disconnect())
       </div>
     </header>
 
+    <!-- ===== Manual (locked tab) ===== -->
+    <ManualView v-if="view === 'manual'" ref="manualView" />
+
     <!-- ===== Content ===== -->
-    <div class="relative min-h-0 flex-1">
+    <div v-show="view !== 'manual'" class="relative min-h-0 flex-1">
       <main ref="scroller" class="absolute inset-0 overflow-y-auto overscroll-contain">
         <!-- Dictionary -->
         <template v-if="view === 'browse'">
@@ -402,7 +413,7 @@ onBeforeUnmount(() => observer?.disconnect())
       aria-label="Sections"
     >
       <button
-        v-for="t in ([['browse', 'Dictionary', 'book'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock']] as const)"
+        v-for="t in ([['browse', 'Dictionary', 'book'], ['saved', 'Saved', 'bookmark'], ['recent', 'Recent', 'clock'], ['manual', 'Manual', manual.state.value === 'open' ? 'manual' : 'lock']] as const)"
         :key="t[0]" type="button"
         class="flex h-14 flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 transition-colors"
         :class="view === t[0] ? 'text-accent' : 'text-muted'"
