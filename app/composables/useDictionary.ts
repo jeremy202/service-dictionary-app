@@ -40,6 +40,7 @@ const STOP_WORDS = new Set(['and', 'of', 'the', 'in', 'to', 'for', 'an', 'or', '
 
 function rank(e: Entry, nq: string, cq: string, w: string[]): Rank | -1 {
   const x = indexOf(e)
+  if (e.kind === 'a') return rankAbbreviation(x, nq, cq, w)
   if (x.nh === nq || x.na === nq || (cq && (x.ca === cq || x.ch === cq))) return Rank.Exact
   if (x.na.startsWith(nq) || x.nh.startsWith(nq) || (cq && (x.ca.startsWith(cq) || x.ch.startsWith(cq)))) return Rank.Prefix
   // A single letter only matches the start of a headword or abbreviation, and single-letter
@@ -51,6 +52,24 @@ function rank(e: Entry, nq: string, cq: string, w: string[]): Rank | -1 {
   if (w.every(t => x.head.includes(t)) || x.ch.includes(cq) || x.ca.includes(cq)) return Rank.InHeadword
   if (w.every(t => x.nm.includes(` ${t}`))) return Rank.MeaningWordStart
   if (w.every(t => x.nm.includes(t))) return Rank.InMeaning
+  return -1
+}
+
+/**
+ * Abbreviations are looked up by their full word (the meaning): "adversary" finds Advy,
+ * "enemy" finds en. The abbreviation itself only counts when typed in full ("advy"),
+ * so a few letters don't bring up every abbreviation that happens to contain them.
+ */
+function rankAbbreviation(x: Index, nq: string, cq: string, w: string[]): Rank | -1 {
+  if (x.nh === nq || (cq && x.ch === cq)) return Rank.Exact
+  if (x.na === nq || (cq && x.ca === cq)) return Rank.Exact
+  if (x.nh.startsWith(nq) || (cq && x.ch.startsWith(cq))) return Rank.Prefix
+  if (cq.length < 2) return -1
+  w = w.filter(t => t.length > 1 && !STOP_WORDS.has(t))
+  if (!w.length) return -1
+  const full = ` ${x.nh}`
+  if (w.every(t => full.includes(` ${t}`))) return Rank.WordStart
+  if (w.every(t => full.includes(t))) return Rank.InHeadword
   return -1
 }
 
@@ -100,7 +119,7 @@ function suggest(nq: string): string[] {
 }
 
 export function useDictionary() {
-  const tab = ref<Tab>('all')
+  const tab = ref<Tab>('t') // the app opens on Terms
   const query = ref('')
   const letter = ref('')
   const abbrSort = ref<AbbrSort>('full')
@@ -123,6 +142,8 @@ export function useDictionary() {
   const lettersAvailable = computed(() => new Set(pool.value.map(letterOf)))
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
+  const exactByName = (e: Entry, q: string) => (indexOf(e).nh === q ? 0 : 1)
+
   /** Every entry in the app that matches the search, best first (all three files). */
   const matches = computed<{ ranks: Map<number, Rank>; list: Entry[] }>(() => {
     const q = nq.value
@@ -135,10 +156,11 @@ export function useDictionary() {
       const r = rank(e, q, cq, w)
       if (r !== -1) { scored.push([r, e]); ranks.set(e.id, r) }
     }
-    const KIND_ORDER = { t: 0, p: 1, a: 2 }
+    const KIND_ORDER = { t: 0, p: 1, a: 2, s: 3 }
     scored.sort((a, b) =>
       a[0] - b[0]
       || (a[0] === Rank.Exact ? KIND_ORDER[a[1].kind] - KIND_ORDER[b[1].kind] : 0) // full entry before its abbreviation
+      || (a[0] === Rank.Exact ? exactByName(a[1], q) - exactByName(b[1], q) : 0) // "enemy" (full word) before an abbreviation typed in full
       || (a[0] <= Rank.Prefix ? sortKey(a[1]).length - sortKey(b[1]).length : 0) // shorter, closer matches first
       || collator.compare(sortKey(a[1]), sortKey(b[1])))
     return { ranks, list: scored.map(([, e]) => e) }

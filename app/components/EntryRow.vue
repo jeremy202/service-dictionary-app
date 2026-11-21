@@ -28,6 +28,9 @@ const subtitle = computed(() => {
   return `…${text.slice(start + 1)}`
 })
 
+// Abbreviations: remarks from the abbreviations file, shown under the meaning
+const remarks = computed(() => props.entry.remarks?.join(' · ') ?? '')
+
 const TAG = {
   t: { label: 'Term', cls: '' },
   a: { label: 'Abbreviation', cls: '' },
@@ -51,8 +54,11 @@ const titleCls = {
   >
     <!-- Abbreviations tab: abbreviation | full form -->
     <template v-if="compact && entry.kind === 'a'">
-      <span class="w-[5.75rem] flex-none truncate text-[15.5px] font-semibold text-abbr" v-html="highlight(entry.abbr ?? '', words)" />
-      <span class="line-clamp-2 min-w-0 flex-1 text-[15.5px] leading-snug" v-html="highlight(entry.meaning, words)" />
+      <span class="w-[5.75rem] flex-none self-start pt-px text-[15.5px] leading-snug font-semibold text-abbr wrap-title" v-html="highlight(entry.abbr ?? '', words)" />
+      <span class="min-w-0 flex-1">
+        <span class="block text-[15.5px] leading-snug wrap-title" v-html="highlight(entry.meaning, words)" />
+        <span v-if="remarks" class="mt-1 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
+      </span>
     </template>
 
     <!-- Military symbol: the symbol from the document on a white tile -->
@@ -65,8 +71,8 @@ const titleCls = {
 
     <!-- Standard row -->
     <span v-if="!(compact && entry.kind === 'a')" class="min-w-0 flex-1">
-      <span class="flex min-w-0 items-center gap-2">
-        <span class="min-w-0 leading-snug" :class="[titleCls[entry.kind], entry.kind === 's' ? 'line-clamp-2' : 'truncate']" v-html="highlight(title, words)" />
+      <span class="flex min-w-0 items-baseline gap-2">
+        <span class="min-w-0 leading-snug wrap-title" :class="titleCls[entry.kind]" v-html="highlight(title, words)" />
         <span
           v-if="showKind"
           class="flex-none text-[12px] text-muted"
@@ -78,6 +84,7 @@ const titleCls = {
         :class="entry.kind === 'a' ? 'line-clamp-1 text-ink/75' : 'line-clamp-2'"
         v-html="entry.kind === 's' && !entry.meaning ? highlight(entry.symbol!.category + ' symbols', words) : highlight(subtitle, words)"
       />
+      <span v-if="entry.kind === 'a' && remarks" class="mt-0.5 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
     </span>
 
     <span v-if="saved" class="flex-none text-brass"><AppIcon name="bookmark" :size="15" filled /></span>

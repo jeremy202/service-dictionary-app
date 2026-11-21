@@ -46,19 +46,15 @@ watch(input, (v) => {
 function onSearchInput(ev: Event) {
   input.value = (ev.target as HTMLInputElement).value
 }
-// A new search covers every entry (All); the previous filter comes back when the search is cleared
-let filterBeforeSearch: Tab | null = null
-watch(query, (q, old) => {
-  const has = !!q.trim(); const had = !!(old ?? '').trim()
-  if (has && !had && view.value === 'browse' && tab.value !== 'all') { filterBeforeSearch = tab.value; tab.value = 'all' }
-  if (!has && had && filterBeforeSearch) { tab.value = filterBeforeSearch; filterBeforeSearch = null }
-})
+// Searching stays in the section you are in (Abbreviations searches abbreviations).
+// Matches in other sections are offered at the top of the results ("Show all").
+const otherMatches = computed(() => (tab.value === 'all' ? 0 : matchCounts.value.all - matchCounts.value[tab.value]))
 function useSuggestion(s: string) {
   input.value = s
   query.value = s
 }
 const searchPlaceholder = computed(() => ({
-  browse: 'Search everything…',
+  browse: tab.value === 'all' ? 'Search everything…' : tab.value === 'a' ? 'Search abbreviations by word…' : `Search ${TABS.find(t => t.id === tab.value)!.label.toLowerCase()}…`,
   saved: 'Search saved entries…',
   recent: 'Search recent entries…',
 })[view.value])
@@ -72,12 +68,34 @@ function cancelSearch() {
 }
 
 /* ---------- filters ---------- */
-const FILTERS = TABS.map(t => ({ ...t, short: t.id === 'all' ? 'All' : t.label }))
+const FILTERS = TABS.map(t => ({ ...t, short: t.label }))
 function setFilter(id: Tab) {
-  filterBeforeSearch = null
   tab.value = id
   scrollTop()
+  nextTick(() => showActiveFilter())
 }
+
+// The filter bar scrolls sideways; fades and an arrow show that more filters are off-screen
+const filterBar = ref<HTMLElement>()
+const moreLeft = ref(false)
+const moreRight = ref(false)
+function updateFilterEdges() {
+  const el = filterBar.value
+  if (!el) return
+  moreLeft.value = el.scrollLeft > 4
+  moreRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+}
+function showActiveFilter() {
+  const el = filterBar.value?.querySelector<HTMLElement>('[aria-pressed="true"]')
+  el?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' })
+}
+function scrollFilters(dir: 1 | -1) {
+  filterBar.value?.scrollBy({ left: dir * Math.max(140, (filterBar.value.clientWidth ?? 300) * 0.6), behavior: 'smooth' })
+}
+onMounted(() => {
+  updateFilterEdges()
+  window.addEventListener('resize', updateFilterEdges)
+})
 
 /* ---------- list (renders progressively for speed) ---------- */
 const scroller = ref<HTMLElement>()
@@ -208,7 +226,7 @@ onBeforeUnmount(() => observer?.disconnect())
       <div class="px-4 pt-2.5 pb-3">
         <div class="flex h-10 items-center gap-2.5">
           <img v-if="view === 'browse'" src="/logo.svg" alt="" width="30" height="30" class="size-7.5 flex-none rounded-[6px]">
-          <h1 class="m-0 truncate font-serif font-semibold" :class="view === 'browse' ? 'text-[21px]' : 'text-[23px]'">{{ title }}</h1>
+          <h1 class="m-0 truncate font-serif font-semibold" :class="view === 'browse' ? 'text-[clamp(15px,5vw,21px)]' : 'text-[23px]'">{{ title }}</h1>
           <span class="flex-1" />
           <button
             v-if="view === 'recent' && library.recent.value.length"
@@ -259,16 +277,34 @@ onBeforeUnmount(() => observer?.disconnect())
           </div>
 
           <!-- Filters (Dictionary tab); while searching they show how many matches each has -->
-          <div v-if="view === 'browse'" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">
-            <button
-              v-for="f in FILTERS" :key="f.id" type="button"
-              class="flex h-8 flex-none cursor-pointer items-center rounded-md border px-3.5 text-[14.5px] font-medium whitespace-nowrap transition-colors"
-              :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
-              @click="setFilter(f.id)"
+          <div v-if="view === 'browse'" class="relative -mx-4 mt-3">
+            <div
+              ref="filterBar" role="tablist" aria-label="Sections"
+              class="no-scrollbar flex gap-2 overflow-x-auto scroll-smooth px-4"
+              @scroll.passive="updateFilterEdges"
             >
-              {{ f.short }}
-            </button>
-
+              <button
+                v-for="f in FILTERS" :key="f.id" type="button" role="tab"
+                :aria-pressed="tab === f.id"
+                class="flex h-8 flex-none cursor-pointer items-center rounded-md border px-3.5 text-[14.5px] font-medium whitespace-nowrap transition-colors"
+                :class="tab === f.id ? 'border-accent bg-accent text-paper' : 'border-line bg-paper text-ink/75 active:bg-line/50'"
+                @click="setFilter(f.id)"
+              >
+                {{ f.short }}
+              </button>
+              <span class="w-6 flex-none" aria-hidden="true" />
+            </div>
+            <!-- More filters to the left / right -->
+            <button
+              v-if="moreLeft" type="button" aria-label="Show earlier sections"
+              class="absolute inset-y-0 left-0 flex w-11 cursor-pointer items-center justify-start bg-gradient-to-r from-canvas from-45% to-transparent pl-1 text-ink/60"
+              @click="scrollFilters(-1)"
+            ><AppIcon name="chevron-left" :size="18" /></button>
+            <button
+              v-if="moreRight" type="button" aria-label="Show more sections"
+              class="absolute inset-y-0 right-0 flex w-14 cursor-pointer items-center justify-end bg-gradient-to-l from-canvas from-45% to-transparent pr-1.5 text-accent"
+              @click="scrollFilters(1)"
+            ><span class="grid size-7 place-items-center rounded-full border border-line bg-paper shadow-sm"><AppIcon name="chevron-right" :size="16" /></span></button>
           </div>
       </div>
     </header>
@@ -293,7 +329,7 @@ onBeforeUnmount(() => observer?.disconnect())
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
-            :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} match, but ${fmt(matchCounts.all)} other entries do.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
+            :text="tab !== 'all' && matchCounts.all ? `No ${FILTERS.find(f => f.id === tab)!.label.toLowerCase()} match, but ${fmt(matchCounts.all)} ${matchCounts.all === 1 ? 'entry' : 'entries'} in other sections ${matchCounts.all === 1 ? 'does' : 'do'}.` : suggestions.length ? 'Did you mean:' : 'Try a shorter word or check the spelling.'"
           >
             <button v-if="tab !== 'all' && matchCounts.all" type="button" class="mt-4 cursor-pointer rounded-sm bg-accent px-5 py-2 text-[14.5px] font-medium text-paper" @click="setFilter('all')">Show all {{ fmt(matchCounts.all) }} results</button>
             <div v-else-if="suggestions.length" class="mt-3 flex flex-wrap justify-center gap-2">
@@ -304,6 +340,15 @@ onBeforeUnmount(() => observer?.disconnect())
               >{{ sg }}</button>
             </div>
           </EmptyState>
+          <button
+            v-if="query.trim() && results.length && otherMatches > 0"
+            type="button"
+            class="flex w-full cursor-pointer items-center gap-2 border-b border-line bg-accent-soft/60 px-4 py-2 text-left text-[13.5px] text-ink/80 active:bg-accent-soft"
+            @click="setFilter('all')"
+          >
+            <span class="min-w-0 flex-1">{{ fmt(otherMatches) }} more {{ otherMatches === 1 ? 'match' : 'matches' }} in other sections</span>
+            <span class="flex flex-none items-center gap-0.5 font-semibold text-accent">Show all <AppIcon name="chevron-right" :size="15" /></span>
+          </button>
           <template v-for="row in rows" :key="row.key">
             <template v-if="row.type === 'letter'">
               <div :id="`sec-${row.letter}`" />

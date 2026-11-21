@@ -96,18 +96,18 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
         </span>
 
         <template v-if="entry.kind === 'a'">
-          <h1 class="mt-2 mb-0 text-[34px] leading-tight font-semibold text-abbr [overflow-wrap:anywhere]">{{ entry.abbr }}</h1>
-          <p class="mt-1 mb-0 font-serif text-[24px] leading-snug">{{ entry.headword }}</p>
+          <h1 class="mt-2 mb-0 text-[34px] leading-tight font-semibold text-abbr wrap-title">{{ entry.abbr }}</h1>
+          <p class="mt-1 mb-0 font-serif text-[24px] leading-snug wrap-title">{{ entry.headword }}</p>
         </template>
-        <h1 v-else-if="entry.kind === 'p'" class="mt-2 mb-0 text-[26px] leading-snug font-semibold tracking-[.03em]">{{ entry.headword }}</h1>
+        <h1 v-else-if="entry.kind === 'p'" class="mt-2 mb-0 text-[26px] leading-snug font-semibold tracking-[.03em] wrap-title">{{ entry.headword }}</h1>
         <template v-else-if="entry.kind === 's' && entry.symbol">
           <div class="mt-4 grid min-h-44 place-items-center rounded-lg border border-line bg-white px-6 py-8">
             <img :src="entry.symbol.image" :alt="entry.headword" class="max-h-40 max-w-full object-contain">
           </div>
-          <h1 class="mt-5 mb-0 font-serif text-[28px] leading-tight font-semibold">{{ entry.headword }}</h1>
+          <h1 class="mt-5 mb-0 font-serif text-[28px] leading-tight font-semibold wrap-title">{{ entry.headword }}</h1>
           <p class="mt-1 mb-0 text-[14px] text-muted">{{ entry.symbol.category }} symbols · No. {{ entry.symbol.serial }}</p>
         </template>
-        <h1 v-else class="mt-2 mb-0 font-serif text-[30px] leading-tight font-semibold">{{ entry.headword }}</h1>
+        <h1 v-else class="mt-2 mb-0 font-serif text-[clamp(24px,7.4vw,30px)] leading-tight font-semibold wrap-title">{{ entry.headword }}</h1>
 
         <div class="my-5 h-px w-full bg-line" />
 
@@ -120,7 +120,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
         >
           <span class="min-w-0 flex-1">
             <span class="block text-[12px] font-semibold tracking-wider text-muted uppercase">{{ entry.meaning.trim().split(/\s/)[0] }}</span>
-            <span class="block font-serif text-[21px] font-semibold">{{ xref }}</span>
+            <span class="block font-serif text-[21px] font-semibold wrap-title">{{ xref }}</span>
           </span>
           <span class="text-accent"><AppIcon name="arrow-right" /></span>
         </button>
@@ -131,11 +131,26 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
           <div v-if="entry.symbol.remarkImage" class="grid place-items-center rounded-lg border border-line bg-white px-6 py-6">
             <img :src="entry.symbol.remarkImage" :alt="entry.meaning" class="max-h-36 max-w-full object-contain">
           </div>
-          <p v-else-if="entry.meaning" class="m-0 text-[16.5px] leading-[1.75] text-ink/90 select-text">{{ entry.meaning }}</p>
+          <p v-else-if="entry.meaning" lang="en" class="m-0 text-justify text-[16.5px] leading-[1.75] text-ink/90 select-text [hyphens:auto]">{{ entry.meaning }}</p>
           <p v-else class="m-0 text-[15px] text-muted">None</p>
         </section>
 
-        <MeaningBlocks v-else-if="entry.kind !== 'a'" :meaning="entry.meaning" class="text-[16.5px] leading-[1.75] text-ink/90 select-text" />
+        <MeaningBlocks
+          v-else-if="entry.kind !== 'a'" :meaning="entry.meaning" :entry="entry"
+          class="text-[16.5px] leading-[1.75] text-ink/90 select-text"
+          @open="emit('open', $event)"
+        />
+
+        <!-- Abbreviations: remarks column of the abbreviations file -->
+        <section v-if="entry.kind === 'a' && entry.remarks?.length" class="mb-6">
+          <h2 class="mb-2 text-[12px] font-semibold tracking-wider text-muted uppercase">Remarks</h2>
+          <ul class="m-0 list-none space-y-1.5 p-0">
+            <li
+              v-for="r in entry.remarks" :key="r"
+              class="rounded-md border border-line bg-paper px-3 py-2 text-[14.5px] leading-snug text-ink/85 [overflow-wrap:break-word]"
+            >{{ r }}</li>
+          </ul>
+        </section>
 
         <!-- Abbreviation extras -->
         <section v-if="otherMeanings.length" class="mt-2">
@@ -146,7 +161,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
               class="flex w-full cursor-pointer items-center gap-3 border-b border-line/70 px-4 py-3 text-left last:border-b-0 active:bg-line/40"
               @click="emit('open', o)"
             >
-              <span class="min-w-0 flex-1 text-[15.5px]">{{ o.headword }}</span>
+              <span class="min-w-0 flex-1 text-[15.5px] wrap-title">{{ o.headword }}</span>
               <span class="text-faint"><AppIcon name="chevron-right" :size="16" /></span>
             </button>
           </div>

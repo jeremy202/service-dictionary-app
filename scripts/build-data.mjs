@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-function parseCsv(text) {
+function parseCsv(text, header = true) {
   text = text.replace(/^﻿/, '')
   const rows = []
   let row = []
@@ -28,10 +28,10 @@ function parseCsv(text) {
     } else field += c
   }
   if (field || row.length) { row.push(field); rows.push(row) }
-  return rows.slice(1).filter(r => r.length >= 2 && (r[0] || r[1]))
+  return rows.slice(header ? 1 : 0).filter(r => r.length >= 2 && (r[0] || r[1]))
 }
 
-const read = f => parseCsv(readFileSync(join(root, 'data/source', f), 'utf8'))
+const read = (f, header = true) => parseCsv(readFileSync(join(root, 'data/source', f), 'utf8'), header)
 
 // The abbreviations file repeats many pairs, word for word ("Commanding Officer, CO" three times)
 // or with only capitals/spacing/hyphens changed ("Armoured personnel carrier, APC", "AV GAS" / "AVGAS",
@@ -39,20 +39,32 @@ const read = f => parseCsv(readFileSync(join(root, 'data/source', f), 'utf8'))
 // Keep the first occurrence of each pair. Abbreviations with different meanings are all kept.
 const normMeaning = s => s.replace(/[-\u2010-\u2013]/g, ' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '').toLowerCase()
 const normAbbr = s => s.replace(/\s+/g, '').replace(/\.$/, '').toLowerCase()
+// Keep the first occurrence of each pair; when the same pair is listed again under another
+// heading, its remarks are added to the first one ("GENERAL ABBREVIATIONS" + "ARMY - ... Appointments").
 function dedupeAbbreviations(rows) {
-  const seen = new Set()
-  return rows.filter(([m, a]) => {
+  const byKey = new Map()
+  const out = []
+  for (const [m, a, r = ''] of rows) {
     const k = `${normMeaning(m)}\u0000${normAbbr(a)}`
-    if (seen.has(k)) return false
-    seen.add(k)
-    return true
-  })
+    const remark = r.trim()
+    const prev = byKey.get(k)
+    if (prev) {
+      if (remark && !prev[2].includes(remark)) prev[2].push(remark)
+      continue
+    }
+    const row = [m.trim(), a.trim(), remark ? [remark] : []]
+    byKey.set(k, row)
+    out.push(row)
+  }
+  return out
 }
 
-const allAbbr = read('ABBREVIATION.csv')
+// The abbreviations file has no header row: its first line ("Abbreviation, abbr") is an entry.
+// Columns: full form, abbreviation, remarks.
+const allAbbr = read('ABBREVIATION.csv', false)
 const data = {
   t: read('Words_and_meaning.csv').map(([w, m]) => [w, m]), // [term, meaning]
-  a: dedupeAbbreviations(allAbbr).map(([m, a]) => [m, a]), // [meaning, abbreviation]
+  a: dedupeAbbreviations(allAbbr), // [meaning, abbreviation, remarks[]]
   p: read('prowords.csv').map(([w, m]) => [w, m]), // [proword, meaning]
 }
 
