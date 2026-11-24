@@ -148,6 +148,9 @@ async function jumpTo(letter: string) {
 
 /* ---------- entry pages (a small stack, so "Back" works between linked entries) ---------- */
 const stack = ref<Entry[]>([])
+// Auto-abbreviate tool (opened from the Abbreviations section)
+const abbrTool = ref(false)
+const abbrToolRef = ref<{ back: () => void } | null>(null)
 const current = computed(() => stack.value[stack.value.length - 1])
 function openEntry(e: Entry) {
   searchEl.value?.blur()
@@ -183,8 +186,9 @@ function setView(v: View) {
 // Footer tabs: close any open entry page or manual page first; tapping Home again
 // (with nothing open) clears the search and returns to the top of the list.
 function navTo(v: View) {
-  const hadOverlay = stack.value.length > 0 || !!manualView.value?.reading
+  const hadOverlay = stack.value.length > 0 || !!manualView.value?.reading || abbrTool.value
   stack.value = []
+  abbrTool.value = false
   if (manualView.value?.reading) manualView.value.reading = 0
   if (v === view.value && !hadOverlay && v === 'browse' && (input.value || query.value)) cancelSearch()
   setView(v)
@@ -216,6 +220,7 @@ onMounted(() => {
     CapApp.addListener('backButton', () => {
       if (paywall.value) paywall.value = null
       else if (stack.value.length) closeEntry()
+      else if (abbrTool.value) abbrToolRef.value?.back()
       else if (view.value === 'manual' && manualView.value?.reading) manualView.value.reading = 0
       else if (view.value === 'manual' && manualQuery.value) manualQuery.value = ''
       else if (input.value || searchFocused.value) cancelSearch()
@@ -389,6 +394,19 @@ onBeforeUnmount(() => observer?.disconnect())
             </span>
             <span class="flex h-8 flex-none items-center rounded-full bg-accent px-3.5 text-[13px] font-semibold text-paper">Upgrade</span>
           </button>
+          <button
+            v-if="tab === 'a' && !query.trim()"
+            type="button"
+            class="mx-4 mb-3 flex w-[calc(100%-2rem)] cursor-pointer items-center gap-3 rounded-2xl bg-accent px-4 py-3.5 text-left text-paper shadow-lift active:opacity-90"
+            @click="searchEl?.blur(); abbrTool = true"
+          >
+            <span class="grid size-11 flex-none place-items-center rounded-xl bg-white/15"><AppIcon name="wand" :size="22" /></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15.5px] font-bold">Auto-abbreviate a document</span>
+              <span class="block text-[12.5px] leading-snug opacity-85">Paste text or upload a Word (.docx) or .txt file</span>
+            </span>
+            <AppIcon name="chevron-right" :size="18" class="opacity-80" />
+          </button>
           <EmptyState
             v-if="!results.length"
             icon="search" title="No matches"
@@ -492,6 +510,15 @@ onBeforeUnmount(() => observer?.disconnect())
         :entry="current" :saved="library.isSaved(current)" :can-go-back="stack.length > 1"
         @close="closeEntry" @toggle-save="toggleSave" @open="openEntry" @lookup="lookup" @notify="notify"
       />
+    </Transition>
+
+    <!-- ===== Auto-abbreviate ===== -->
+    <Transition
+      enter-from-class="translate-y-full" leave-to-class="translate-y-full"
+      enter-active-class="transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)]"
+      leave-active-class="transition-transform duration-250 ease-in"
+    >
+      <AbbreviateTool v-if="abbrTool" ref="abbrToolRef" @close="abbrTool = false" @notify="notify" />
     </Transition>
 
     <!-- ===== Payment page ===== -->

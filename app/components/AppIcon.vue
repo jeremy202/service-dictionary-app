@@ -13,6 +13,10 @@ defineProps<{ name: string; size?: number; filled?: boolean }>()
       <path d="M12 7v12.5" />
     </template>
     <template v-else-if="name === 'home'"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1Z" :fill="filled ? 'currentColor' : 'none'" :fill-opacity="filled ? .14 : 0" /></template>
+    <template v-else-if="name === 'wand'"><path d="M4 20 15 9M13 7l4 4" /><path d="M18 3v3M16.5 4.5h3M20 9v2M19 10h2M10 3v2M9 4h2" /></template>
+    <template v-else-if="name === 'upload'"><path d="M12 15V4M8 8l4-4 4 4" /><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15" /></template>
+    <template v-else-if="name === 'download'"><path d="M12 4v11M8 11l4 4 4-4" /><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15" /></template>
+    <template v-else-if="name === 'file'"><path d="M14 3.5H7.5a1.5 1.5 0 0 0-1.5 1.5v14a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 18 19V7.5Z" /><path d="M14 3.5v4h4M9 12.5h6M9 16h6" /></template>
     <template v-else-if="name === 'trash'"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1 1 0 0 0 1 .8h7.2a1 1 0 0 0 1-.8L17.5 7M10 11v5.5M14 11v5.5" /></template>
     <template v-else-if="name === 'arrow-up-right'"><path d="M8 16 16.5 7.5M9.5 7.5h7v7" /></template>
     <template v-else-if="name === 'lock'"><rect x="5" y="10.5" width="14" height="10" rx="2" :fill="filled ? 'currentColor' : 'none'" :fill-opacity="filled ? .14 : 0" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></template>
