@@ -72,56 +72,30 @@ function cancelSearch() {
 /* ---------- filters ---------- */
 const FILTERS = TABS.map(t => ({ ...t, short: t.label }))
 
-/* Section chips: as many as fit are shown; the rest go in the drop-down. */
+/* Section chips: always Dictionary and Abbreviations, then "More" with the other sections
+   (client's request: the same two chips every time, everything else inside More). */
 const filterMenu = ref(false)
-const chipCount = ref(2)
-const chipTabs = computed(() => FILTERS.slice(0, chipCount.value))
-const menuTabs = computed(() => FILTERS.slice(chipCount.value))
+const CHIPS = 2
+const chipTabs = computed(() => FILTERS.slice(0, CHIPS))
+const menuTabs = computed(() => FILTERS.slice(CHIPS))
 const menuActive = computed(() => menuTabs.value.find(f => f.id === tab.value) ?? null)
+// The list opens under "More", kept on screen
+const moreBtn = ref<HTMLElement>()
 const menuLeft = ref(16)
-let measureCtx: CanvasRenderingContext2D | null = null
-function fitChips() {
-  const bar = filterBar.value
-  if (!bar) return
-  measureCtx ??= document.createElement('canvas').getContext('2d')
-  if (!measureCtx) return
-  measureCtx.font = '600 14.5px "IBM Plex Sans", sans-serif'
-  const chipW = (t: string) => Math.ceil(measureCtx!.measureText(t).width) + 30 // padding + border
-  const room = bar.clientWidth - 32 // side padding
-  const gap = 6
-  let n = 0
-  let used = 0
-  for (let i = 0; i < FILTERS.length; i++) {
-    const rest = FILTERS.slice(i + 1)
-    // keep room for the drop-down chip: just the arrow, or the arrow and the name of the
-    // section picked from it
-    const picked = rest.find(f => f.id === tab.value)
-    const reserve = rest.length ? (picked ? chipW(picked.short) + 18 : 38) + gap : 0
-    const w = chipW(FILTERS[i]!.short) + (i ? gap : 0)
-    if (used + w + reserve > room) break
-    used += w
-    n = i + 1
-  }
-  chipCount.value = Math.max(1, Math.min(n, FILTERS.length))
-  nextTick(() => {
-    const chips = bar.querySelectorAll<HTMLElement>('[role=tab]')
-    const last = chips[chips.length - 1]
-    menuLeft.value = last ? Math.min(last.offsetLeft + last.offsetWidth + gap, bar.clientWidth - 16 - 224) : 16
-  })
+function placeMenu() {
+  const b = moreBtn.value
+  if (!b) return
+  const w = 224
+  menuLeft.value = Math.max(16, Math.min(b.offsetLeft, (b.offsetParent as HTMLElement).clientWidth - 16 - w))
 }
+
 function setFilter(id: Tab) {
   tab.value = id
   scrollTop()
 }
 
-// Section chips are refitted to the screen width (and after fonts load)
 const filterBar = ref<HTMLElement>()
-watch(tab, () => nextTick(fitChips))
-onMounted(() => {
-  fitChips()
-  window.addEventListener('resize', fitChips)
-  document.fonts?.ready.then(fitChips)
-})
+
 
 /* ---------- list (renders progressively for speed) ---------- */
 const scroller = ref<HTMLElement>()
@@ -202,7 +176,6 @@ function setView(v: View) {
   view.value = v
   nextTick(() => {
     scrollTop()
-    if (v === 'browse') fitChips() // the chip row is rebuilt
   })
 }
 // Footer tabs: close any open entry page or manual page first; tapping Home again
@@ -374,7 +347,7 @@ onBeforeUnmount(() => observer?.disconnect())
         <button
           v-for="f in chipTabs" :key="f.id" type="button" role="tab"
           :aria-pressed="tab === f.id"
-          class="flex h-9 flex-none cursor-pointer items-center rounded-full border px-3.5 text-[14.5px] whitespace-nowrap transition-colors"
+          class="flex h-9 flex-none cursor-pointer items-center rounded-full border px-[clamp(10px,3.4vw,14px)] text-[clamp(13px,3.9vw,14.5px)] whitespace-nowrap transition-colors"
           :class="tab === f.id ? 'border-accent bg-accent font-semibold text-paper shadow-card' : 'border-line bg-paper/70 font-medium text-ink/75 active:bg-line/60'"
           @click="setFilter(f.id); filterMenu = false"
         >
@@ -382,13 +355,14 @@ onBeforeUnmount(() => observer?.disconnect())
         </button>
         <button
           v-if="menuTabs.length" type="button"
-          aria-haspopup="menu" :aria-expanded="filterMenu"
-          :aria-label="menuActive ? `${menuActive.label}, more sections` : 'More sections'"
-          class="flex h-9 min-w-9 flex-none cursor-pointer items-center justify-center gap-1 rounded-full text-[14.5px] whitespace-nowrap transition-colors"
-          :class="menuActive ? 'bg-accent pr-2.5 pl-3.5 font-semibold text-paper shadow-card' : filterMenu ? 'border border-accent/50 bg-accent-soft px-2.5 text-accent' : 'border border-line bg-paper/70 px-2.5 text-ink/75 active:bg-line/60'"
+          ref="moreBtn" aria-haspopup="menu" :aria-expanded="filterMenu"
+          :aria-label="menuActive ? `More sections, ${menuActive.label} selected` : 'More sections'"
+          class="flex h-9 flex-none cursor-pointer items-center gap-0.5 rounded-full border pr-[clamp(7px,2.4vw,10px)] pl-[clamp(10px,3.4vw,14px)] text-[clamp(13px,3.9vw,14.5px)] whitespace-nowrap transition-colors"
+          :class="menuActive ? 'border-accent bg-accent font-semibold text-paper shadow-card' : filterMenu ? 'border-accent/50 bg-accent-soft font-medium text-accent' : 'border-line bg-paper/70 font-medium text-ink/75 active:bg-line/60'"
           @click="filterMenu = !filterMenu"
+          @click.capture="placeMenu"
         >
-          <span v-if="menuActive">{{ menuActive.short }}</span>
+          More
           <AppIcon name="chevron-right" :size="16" class="transition-transform" :class="filterMenu ? '-rotate-90' : 'rotate-90'" />
         </button>
       </div>
@@ -408,6 +382,7 @@ onBeforeUnmount(() => observer?.disconnect())
             @click="setFilter(f.id); filterMenu = false"
           >
             <span class="min-w-0 flex-1">{{ f.label }}</span>
+            <svg v-if="tab === f.id" viewBox="0 0 24 24" class="size-4.5 flex-none" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
             <span class="text-[13px] font-medium text-muted tabular-nums">{{ fmt(query.trim() ? matchCounts[f.id] : COUNTS[f.id]) }}</span>
           </button>
         </div>
