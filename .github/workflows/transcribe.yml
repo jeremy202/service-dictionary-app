@@ -1,0 +1,19 @@
+name: Transcribe (temporary)
+on:
+  push:
+    branches: [tmp-transcribe]
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -q faster-whisper
+      - run: |
+          python - <<'PY'
+          from faster_whisper import WhisperModel
+          m = WhisperModel('medium', device='cpu', compute_type='int8')
+          segs, info = m.transcribe('tmp/feedback.wav', language='en', beam_size=5)
+          for s in segs: print(f'TX [{s.start:5.1f}-{s.end:5.1f}] {s.text}')
+          PY
