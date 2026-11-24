@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { App as CapApp } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
-import { ALPHABET, TABS, type Entry, type Tab } from '~/utils/dictionary'
+import { ALPHABET, COUNTS, TABS, type Entry, type Tab } from '~/utils/dictionary'
 
 const { tab, query, words, results, letterOf, lettersAvailable, isNameMatch, matchCounts, matchesSearch, suggestions } = useDictionary()
 const library = useLibrary()
@@ -54,7 +54,7 @@ function useSuggestion(s: string) {
   query.value = s
 }
 const searchPlaceholder = computed(() => ({
-  browse: tab.value === 'all' ? 'Search everything…' : tab.value === 'a' ? 'Search abbreviations by word…' : `Search ${TABS.find(t => t.id === tab.value)!.label.toLowerCase()}…`,
+  browse: tab.value === 'all' ? 'Search everything…' : tab.value === 'a' ? 'Search abbreviations by word…' : tab.value === 'h' ? 'Search honours and awards…' : `Search ${TABS.find(t => t.id === tab.value)!.label.toLowerCase()}…`,
   saved: 'Search saved entries…',
   recent: 'Search recent entries…',
   manual: 'Search the manual…',
@@ -71,35 +71,56 @@ function cancelSearch() {
 
 /* ---------- filters ---------- */
 const FILTERS = TABS.map(t => ({ ...t, short: t.label }))
+
+/* Section chips: as many as fit are shown; the rest go in the drop-down. */
+const filterMenu = ref(false)
+const chipCount = ref(2)
+const chipTabs = computed(() => FILTERS.slice(0, chipCount.value))
+const menuTabs = computed(() => FILTERS.slice(chipCount.value))
+const menuActive = computed(() => menuTabs.value.find(f => f.id === tab.value) ?? null)
+const menuLeft = ref(16)
+let measureCtx: CanvasRenderingContext2D | null = null
+function fitChips() {
+  const bar = filterBar.value
+  if (!bar) return
+  measureCtx ??= document.createElement('canvas').getContext('2d')
+  if (!measureCtx) return
+  measureCtx.font = '600 14.5px "IBM Plex Sans", sans-serif'
+  const chipW = (t: string) => Math.ceil(measureCtx!.measureText(t).width) + 30 // padding + border
+  const room = bar.clientWidth - 32 // side padding
+  const gap = 6
+  let n = 0
+  let used = 0
+  for (let i = 0; i < FILTERS.length; i++) {
+    const rest = FILTERS.slice(i + 1)
+    // keep room for the drop-down chip: just the arrow, or the arrow and the name of the
+    // section picked from it
+    const picked = rest.find(f => f.id === tab.value)
+    const reserve = rest.length ? (picked ? chipW(picked.short) + 18 : 38) + gap : 0
+    const w = chipW(FILTERS[i]!.short) + (i ? gap : 0)
+    if (used + w + reserve > room) break
+    used += w
+    n = i + 1
+  }
+  chipCount.value = Math.max(1, Math.min(n, FILTERS.length))
+  nextTick(() => {
+    const chips = bar.querySelectorAll<HTMLElement>('[role=tab]')
+    const last = chips[chips.length - 1]
+    menuLeft.value = last ? Math.min(last.offsetLeft + last.offsetWidth + gap, bar.clientWidth - 16 - 224) : 16
+  })
+}
 function setFilter(id: Tab) {
   tab.value = id
   scrollTop()
-  nextTick(() => showActiveFilter())
 }
 
-// The filter bar scrolls sideways; fades and an arrow show that more filters are off-screen
+// Section chips are refitted to the screen width (and after fonts load)
 const filterBar = ref<HTMLElement>()
-const moreLeft = ref(false)
-const moreRight = ref(false)
-function updateFilterEdges() {
-  const el = filterBar.value
-  if (!el) return
-  moreLeft.value = el.scrollLeft > 4
-  moreRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
-}
-function showActiveFilter() {
-  const bar = filterBar.value
-  const el = bar?.querySelector<HTMLElement>('[aria-pressed="true"]')
-  if (!bar || !el) return
-  // Centre the active chip so it never sits under the edge arrows
-  bar.scrollTo({ left: Math.max(0, el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2), behavior: 'smooth' })
-}
-function scrollFilters(dir: 1 | -1) {
-  filterBar.value?.scrollBy({ left: dir * Math.max(140, (filterBar.value.clientWidth ?? 300) * 0.6), behavior: 'smooth' })
-}
+watch(tab, () => nextTick(fitChips))
 onMounted(() => {
-  updateFilterEdges()
-  window.addEventListener('resize', updateFilterEdges)
+  fitChips()
+  window.addEventListener('resize', fitChips)
+  document.fonts?.ready.then(fitChips)
 })
 
 /* ---------- list (renders progressively for speed) ---------- */
@@ -126,7 +147,8 @@ const rows = computed<Row[]>(() => {
       if (i === nameMatches.value) out.push({ type: 'label', key: 'lbl-meanings', label: 'Found in meanings', count: results.value.length - nameMatches.value })
     } else {
       // Symbols are grouped by the document's sections; everything else by letter
-      const l = tab.value === 's' ? `${e.symbol!.category} symbols` : letterOf(e)
+      // Honours/Awards follow the file's categories (rows without one are listed under "Other")
+      const l = tab.value === 's' ? `${e.symbol!.category} symbols` : tab.value === 'h' ? (e.honour!.category || 'Other') : letterOf(e)
       if (l !== last) { out.push({ type: 'letter', key: `L${l}`, letter: l }); last = l }
     }
     out.push({ type: 'entry', key: `E${e.id}`, entry: e })
@@ -134,7 +156,7 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
-const hasScrubber = computed(() => view.value === 'browse' && tab.value !== 's' && !query.value.trim() && results.value.length > 30)
+const hasScrubber = computed(() => view.value === 'browse' && tab.value !== 's' && tab.value !== 'h' && !query.value.trim() && results.value.length > 30)
 const scrubLetters = computed(() => ALPHABET.filter(l => l !== '#' || lettersAvailable.value.has('#')))
 async function jumpTo(letter: string) {
   tap()
@@ -180,7 +202,7 @@ function setView(v: View) {
   view.value = v
   nextTick(() => {
     scrollTop()
-    if (v === 'browse') { showActiveFilter(); updateFilterEdges() } // the chip row is rebuilt: bring the active chip into view
+    if (v === 'browse') fitChips() // the chip row is rebuilt
   })
 }
 // Footer tabs: close any open entry page or manual page first; tapping Home again
@@ -189,6 +211,7 @@ function navTo(v: View) {
   const hadOverlay = stack.value.length > 0 || !!manualView.value?.reading || abbrTool.value
   stack.value = []
   abbrTool.value = false
+  filterMenu.value = false
   if (manualView.value?.reading) manualView.value.reading = 0
   if (v === view.value && !hadOverlay && v === 'browse' && (input.value || query.value)) cancelSearch()
   setView(v)
@@ -219,6 +242,7 @@ onMounted(() => {
   if (Capacitor.isNativePlatform()) {
     CapApp.addListener('backButton', () => {
       if (paywall.value) paywall.value = null
+      else if (filterMenu.value) filterMenu.value = false
       else if (stack.value.length) closeEntry()
       else if (abbrTool.value) abbrToolRef.value?.back()
       else if (view.value === 'manual' && manualView.value?.reading) manualView.value.reading = 0
@@ -269,7 +293,7 @@ onBeforeUnmount(() => observer?.disconnect())
         <button
           v-if="view === 'browse'" type="button"
           class="mt-2 flex cursor-pointer items-center gap-2 text-[13px] text-on-header/80"
-          @click="showActiveFilter()"
+          @click="filterMenu = !filterMenu"
         >
           Searching in
           <span class="rounded-full bg-sand px-2.5 py-0.5 text-[12.5px] font-bold text-on-sand">{{ tab === 'all' ? 'All sections' : FILTERS.find(f => f.id === tab)!.label }}</span>
@@ -343,35 +367,51 @@ onBeforeUnmount(() => observer?.disconnect())
       </div>
     </header>
 
-    <!-- Section chips (Dictionary tab), under the band -->
-    <div v-if="view === 'browse'" class="relative z-10 flex-none pt-3 pb-1.5">
-      <div
-        ref="filterBar" role="tablist" aria-label="Sections"
-        class="no-scrollbar flex gap-1.5 overflow-x-auto scroll-smooth px-4"
-        @scroll.passive="updateFilterEdges"
-      >
+    <!-- Section chips under the band: the first sections as chips, the rest in a drop-down
+         (like WhatsApp's chat filters). The drop-down chip shows the section picked from it. -->
+    <div v-if="view === 'browse'" class="relative z-20 flex-none pt-3 pb-1.5">
+      <div ref="filterBar" role="tablist" aria-label="Sections" class="flex items-center gap-1.5 px-4">
         <button
-          v-for="f in FILTERS" :key="f.id" type="button" role="tab"
+          v-for="f in chipTabs" :key="f.id" type="button" role="tab"
           :aria-pressed="tab === f.id"
-          class="flex h-9 flex-none cursor-pointer items-center rounded-full px-4 text-[14.5px] whitespace-nowrap transition-colors"
-          :class="tab === f.id ? 'bg-accent font-semibold text-paper shadow-card' : 'font-medium text-ink/70 active:bg-line/60'"
-          @click="setFilter(f.id)"
+          class="flex h-9 flex-none cursor-pointer items-center rounded-full border px-3.5 text-[14.5px] whitespace-nowrap transition-colors"
+          :class="tab === f.id ? 'border-accent bg-accent font-semibold text-paper shadow-card' : 'border-line bg-paper/70 font-medium text-ink/75 active:bg-line/60'"
+          @click="setFilter(f.id); filterMenu = false"
         >
           {{ f.short }}
         </button>
-        <span class="w-8 flex-none" aria-hidden="true" />
+        <button
+          v-if="menuTabs.length" type="button"
+          aria-haspopup="menu" :aria-expanded="filterMenu"
+          :aria-label="menuActive ? `${menuActive.label}, more sections` : 'More sections'"
+          class="flex h-9 min-w-9 flex-none cursor-pointer items-center justify-center gap-1 rounded-full text-[14.5px] whitespace-nowrap transition-colors"
+          :class="menuActive ? 'bg-accent pr-2.5 pl-3.5 font-semibold text-paper shadow-card' : filterMenu ? 'border border-accent/50 bg-accent-soft px-2.5 text-accent' : 'border border-line bg-paper/70 px-2.5 text-ink/75 active:bg-line/60'"
+          @click="filterMenu = !filterMenu"
+        >
+          <span v-if="menuActive">{{ menuActive.short }}</span>
+          <AppIcon name="chevron-right" :size="16" class="transition-transform" :class="filterMenu ? '-rotate-90' : 'rotate-90'" />
+        </button>
       </div>
-      <!-- More sections to the left / right -->
-      <button
-        v-if="moreLeft" type="button" aria-label="Show earlier sections"
-        class="absolute top-3 bottom-1.5 left-0 flex w-11 cursor-pointer items-center justify-start bg-gradient-to-r from-canvas from-45% to-transparent pl-1 text-ink/60"
-        @click="scrollFilters(-1)"
-      ><AppIcon name="chevron-left" :size="18" /></button>
-      <button
-        v-if="moreRight" type="button" aria-label="Show more sections"
-        class="absolute top-3 right-0 bottom-1.5 flex w-14 cursor-pointer items-center justify-end bg-gradient-to-l from-canvas from-45% to-transparent pr-2 text-accent"
-        @click="scrollFilters(1)"
-      ><span class="grid size-7 place-items-center rounded-full bg-paper shadow-card"><AppIcon name="chevron-right" :size="16" /></span></button>
+
+      <!-- Drop-down list of the other sections -->
+      <template v-if="filterMenu">
+        <div class="fixed inset-0 z-0" aria-hidden="true" @click="filterMenu = false" />
+        <div
+          role="menu" aria-label="More sections"
+          class="absolute top-[calc(100%-2px)] z-10 min-w-56 overflow-hidden rounded-2xl border border-line/70 bg-paper py-1.5 shadow-lift"
+          :style="{ left: `${menuLeft}px` }"
+        >
+          <button
+            v-for="f in menuTabs" :key="f.id" type="button" role="menuitemradio" :aria-checked="tab === f.id"
+            class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-[15px] active:bg-accent-soft"
+            :class="tab === f.id ? 'font-bold text-accent' : 'font-medium text-ink'"
+            @click="setFilter(f.id); filterMenu = false"
+          >
+            <span class="min-w-0 flex-1">{{ f.label }}</span>
+            <span class="text-[13px] font-medium text-muted tabular-nums">{{ fmt(query.trim() ? matchCounts[f.id] : COUNTS[f.id]) }}</span>
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- ===== Manual (locked tab) ===== -->

@@ -10,7 +10,7 @@ import { spaceOut } from '~/utils/formatMeaning'
 const props = defineProps<{ entry: Entry; words: string[]; showKind?: boolean; saved?: boolean; recent?: boolean }>()
 defineEmits<{ open: [entry: Entry] }>()
 
-const title = computed(() => (props.entry.kind === 'a' ? props.entry.abbr ?? '' : props.entry.headword))
+const title = computed(() => (props.entry.kind === 'a' || props.entry.kind === 'h' ? props.entry.abbr ?? '' : props.entry.headword))
 // Short preview of the meaning; the full text is on the entry page.
 // When the search word is found further into a long meaning, the preview starts
 // just before it ("…at any stage of operations…") so you can see why it matched.
@@ -30,11 +30,14 @@ const subtitle = computed(() => {
 
 // Abbreviations: the category (remarks column of the abbreviations file)
 const remarks = computed(() => props.entry.remarks?.join(' · ') ?? '')
+// Honours/Awards: who it is awarded to, or else the start of the description
+const honourLine = computed(() => props.entry.honour?.eligibility || subtitle.value)
 
-const TAG = { t: 'Dictionary', a: 'Abbreviation', p: 'Proword', s: 'Symbol' }
+const TAG = { t: 'Dictionary', a: 'Abbreviation', h: 'Honours/Awards', p: 'Proword', s: 'Symbol' }
 const titleCls = {
   t: 'text-[16.5px] font-bold',
   a: '',
+  h: '',
   p: 'text-[15.5px] font-bold tracking-[.03em]',
   s: 'text-[16px] font-bold',
 }
@@ -62,6 +65,16 @@ const titleCls = {
       </span>
       <span class="mt-0.5 block text-[21px] leading-tight font-bold tracking-[.01em] text-mint wrap-title" v-html="highlight(entry.abbr ?? '', words)" />
       <span v-if="remarks" class="mt-1 block text-[12px] leading-snug text-muted wrap-title">{{ remarks }}</span>
+    </span>
+
+    <!-- Honours/Awards: full meaning on top, abbreviation below (mint), then who it is for -->
+    <span v-else-if="entry.kind === 'h'" class="min-w-0 flex-1">
+      <span class="flex min-w-0 items-start gap-2">
+        <span class="min-w-0 flex-1 text-[14.5px] leading-snug font-medium text-ink wrap-title" v-html="highlight(entry.headword, words)" />
+        <span v-if="showKind" class="mt-px flex-none rounded-full bg-sand px-2 py-px text-[11px] font-semibold text-on-sand">{{ TAG.h }}</span>
+      </span>
+      <span class="mt-0.5 block text-[21px] leading-tight font-bold tracking-[.01em] text-mint wrap-title" v-html="highlight(entry.abbr ?? '', words)" />
+      <span v-if="honourLine" class="mt-1 line-clamp-2 text-[12.5px] leading-snug text-muted" v-html="highlight(honourLine, words)" />
     </span>
 
     <!-- Other entries: name, then a preview of the meaning -->

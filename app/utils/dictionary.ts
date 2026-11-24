@@ -1,7 +1,7 @@
 import raw from '~/data/dictionary.json'
 import symbolsRaw from '~/data/symbols.json'
 
-export type Kind = 't' | 'a' | 'p' | 's'
+export type Kind = 't' | 'a' | 'h' | 'p' | 's'
 export type Tab = 'all' | Kind
 export type AbbrSort = 'full' | 'abbr'
 
@@ -16,6 +16,8 @@ export interface Entry {
   meaning: string
   /** Abbreviations only: the remarks column of the abbreviations file (one per heading it is listed under) */
   remarks?: string[]
+  /** Honours and awards only: category and who it is awarded to, as in the file (may be empty) */
+  honour?: { category: string; eligibility: string }
   /** Military symbols only */
   symbol?: { id: string; category: string; serial: number; image: string; remarkImage: string | null }
   // lower-cased copies for searching
@@ -24,7 +26,7 @@ export interface Entry {
   lm: string
 }
 
-const data = raw as { t: [string, string][]; a: [string, string, string[]][]; p: [string, string][] }
+const data = raw as { t: [string, string][]; a: [string, string, string[]][]; p: [string, string][]; h: [string, string, string, string, string][] }
 
 // Terms in the source end with a full stop ("Leadership."); it is hidden in the headword only.
 const trimStop = (s: string) => s.replace(/\.\s*$/, '')
@@ -59,6 +61,12 @@ export const ENTRIES: Entry[] = [
     e.symbol = { id: r.id, category: r.category, serial: r.serial, image: `/symbols/${r.image}`, remarkImage: r.remarkImage ? `/symbols/${r.remarkImage}` : null }
     return e
   }),
+  // Honours and awards: full meaning as the name, the description as the meaning
+  ...data.h.map(([a, m, c, w, d]) => {
+    const e = make('h', m, d, a)
+    e.honour = { category: c, eligibility: w }
+    return e
+  }),
 ]
 
 export const COUNTS: Record<Tab, number> = {
@@ -67,18 +75,20 @@ export const COUNTS: Record<Tab, number> = {
   a: data.a.length,
   p: data.p.length,
   s: (symbolsRaw as unknown[]).length,
+  h: data.h.length,
 }
 
 // The app opens on Dictionary; "All" sits at the far right
 export const TABS: { id: Tab; label: string; slug: string }[] = [
   { id: 't', label: 'Dictionary', slug: 'dictionary' },
   { id: 'a', label: 'Abbreviations', slug: 'abbreviations' },
+  { id: 'h', label: 'Honours/Awards', slug: 'honours-awards' },
   { id: 's', label: 'Symbols', slug: 'symbols' },
   { id: 'p', label: 'Prowords', slug: 'prowords' },
   { id: 'all', label: 'All', slug: 'all' },
 ].filter(t => t.id !== 's' || (symbolsRaw as unknown[]).length > 0) // tab shows only when symbols are included
 
-export const KIND_LABEL: Record<Kind, string> = { t: 'Term', a: 'Abbreviation', p: 'Proword', s: 'Symbol' }
+export const KIND_LABEL: Record<Kind, string> = { t: 'Term', a: 'Abbreviation', h: 'Honours/Awards', p: 'Proword', s: 'Symbol' }
 
 export const ALPHABET = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#']
 

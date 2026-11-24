@@ -131,7 +131,7 @@ export function useDictionary() {
   // Abbreviations are filed under their abbreviation in "All" (matching the row title),
   // and under the full form on the Abbreviations tab unless sorted by abbreviation.
   const sortKey = (e: Entry) =>
-    e.kind === 'a' && (tab.value === 'all' || (tab.value === 'a' && abbrSort.value === 'abbr')) ? e.la : e.lh
+    (e.kind === 'a' && (tab.value === 'all' || (tab.value === 'a' && abbrSort.value === 'abbr'))) || (e.kind === 'h' && tab.value === 'all') ? e.la : e.lh
 
   const letterOf = (e: Entry) => {
     const c = sortKey(e).replace(/^[^a-z0-9]+/, '')[0] ?? '#'
@@ -156,7 +156,7 @@ export function useDictionary() {
       const r = rank(e, q, cq, w)
       if (r !== -1) { scored.push([r, e]); ranks.set(e.id, r) }
     }
-    const KIND_ORDER = { t: 0, p: 1, a: 2, s: 3 }
+    const KIND_ORDER = { t: 0, p: 1, a: 2, h: 3, s: 4 }
     scored.sort((a, b) =>
       a[0] - b[0]
       || (a[0] === Rank.Exact ? KIND_ORDER[a[1].kind] - KIND_ORDER[b[1].kind] : 0) // full entry before its abbreviation
@@ -168,7 +168,7 @@ export function useDictionary() {
 
   /** Number of matches for each filter button. */
   const matchCounts = computed(() => {
-    const c = { all: 0, t: 0, a: 0, p: 0, s: 0 }
+    const c = { all: 0, t: 0, a: 0, h: 0, p: 0, s: 0 }
     for (const e of matches.value.list) { c.all++; c[e.kind]++ }
     return c
   })
@@ -180,6 +180,8 @@ export function useDictionary() {
       const sec = (e: Entry) => SYMBOL_CATEGORIES.indexOf(e.symbol!.category)
       return [...pool.value].sort((a, b) => sec(a) - sec(b) || a.symbol!.serial - b.symbol!.serial)
     }
+    // Honours/Awards tab: the file's order (order of precedence, grouped by category)
+    if (tab.value === 'h') return pool.value
     // Entries starting with a number or symbol ("1st Lt", "2iC") go after Z
     const numeric = (e: Entry) => (letterOf(e) === '#' ? 1 : 0)
     let list = [...pool.value].sort((a, b) => numeric(a) - numeric(b) || collator.compare(sortKey(a), sortKey(b)))

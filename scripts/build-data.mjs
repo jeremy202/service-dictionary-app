@@ -66,7 +66,10 @@ const data = {
   t: read('Words_and_meaning.csv').map(([w, m]) => [w, m]), // [term, meaning]
   a: dedupeAbbreviations(allAbbr), // [meaning, abbreviation, remarks[]]
   p: read('prowords.csv').map(([w, m]) => [w, m]), // [proword, meaning]
+  // Honours and awards, in the file's order (which follows the order of precedence).
+  // Columns: abbreviation, full meaning, category, awardee / eligibility, description / criteria
+  h: read('HONOURS_AND_AWARDS.csv').map(([a, m, c = '', w = '', d = '']) => [a.trim(), m.trim(), c.trim(), w.trim(), d.trim()]),
 }
 
 writeFileSync(join(root, 'app/data/dictionary.json'), JSON.stringify(data))
-console.log(`Terms: ${data.t.length}  Abbreviations: ${data.a.length} (${allAbbr.length - data.a.length} duplicates removed)  Prowords: ${data.p.length}`)
+console.log(`Terms: ${data.t.length}  Abbreviations: ${data.a.length} (${allAbbr.length - data.a.length} duplicates removed)  Prowords: ${data.p.length}  Honours/Awards: ${data.h.length}`)

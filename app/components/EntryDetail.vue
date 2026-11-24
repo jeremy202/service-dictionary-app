@@ -40,9 +40,23 @@ const otherAbbrs = computed(() => {
   })
 })
 
+// Honours/Awards: [heading, text, justify]; empty columns are left out
+const honourSections = computed(() => {
+  const e = props.entry
+  if (e.kind !== 'h') return []
+  return ([
+    ['Category', e.honour?.category ?? '', false],
+    ['Awardee / Eligibility', e.honour?.eligibility ?? '', false],
+    ['Description / Criteria for Awarding', e.meaning, true],
+  ] as [string, string, boolean][]).filter(s => s[1])
+})
+
 const plain = computed(() => {
   const e = props.entry
   if (e.kind === 's') return `${e.headword} (${e.symbol?.category} symbol)${e.meaning ? `\n\n${e.meaning}` : ''}`
+  if (e.kind === 'h') {
+    return [`${e.abbr} — ${e.headword}`, e.honour?.category, e.honour?.eligibility, e.meaning].filter(Boolean).join('\n\n')
+  }
   return e.kind === 'a' ? `${e.abbr} — ${e.headword}` : `${e.headword}\n\n${e.meaning}`
 })
 
@@ -89,7 +103,7 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
     <!-- Content sheet -->
     <div ref="body" class="flex-1 overflow-y-auto overscroll-contain rounded-t-[26px] bg-canvas">
       <article class="mx-auto max-w-2xl px-5 pt-6 pb-10">
-        <template v-if="entry.kind === 'a'">
+        <template v-if="entry.kind === 'a' || entry.kind === 'h'">
           <!-- The word (what was searched for) on top, the abbreviation (the result) below -->
           <p class="m-0 text-[21px] leading-snug font-semibold text-ink wrap-title">{{ entry.headword }}</p>
           <h1 class="mt-1 mb-0 text-[40px] leading-[1.1] font-bold tracking-[.01em] text-mint wrap-title">{{ entry.abbr }}</h1>
@@ -135,10 +149,18 @@ watch(() => props.entry, () => body.value?.scrollTo({ top: 0 }))
         </section>
 
         <MeaningBlocks
-          v-else-if="entry.kind !== 'a'" :meaning="entry.meaning" :entry="entry"
+          v-else-if="entry.kind !== 'a' && entry.kind !== 'h'" :meaning="entry.meaning" :entry="entry"
           class="rounded-2xl bg-paper px-4 py-4 text-[16.5px] leading-[1.75] text-ink/90 shadow-card select-text"
           @open="emit('open', $event)"
         />
+
+        <!-- Honours/Awards: the file's columns, under their own headings -->
+        <template v-if="entry.kind === 'h'">
+          <section v-for="sec in honourSections" :key="sec[0]" class="mb-5">
+            <h2 class="mt-0 mb-2 text-[15px] font-bold">{{ sec[0] }}</h2>
+            <p lang="en" class="m-0 rounded-2xl bg-paper px-4 py-3.5 text-[16px] leading-[1.7] text-ink/90 shadow-card select-text [overflow-wrap:break-word]" :class="sec[2] ? 'text-justify [hyphens:auto]' : ''">{{ sec[1] }}</p>
+          </section>
+        </template>
 
         <!-- Abbreviations: category (remarks column of the abbreviations file) -->
         <section v-if="entry.kind === 'a' && entry.remarks?.length" class="mb-6">
